@@ -1,0 +1,549 @@
+<title>MB Veranda Opleverformulier</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: a dark letterhead band (the logo's own ground), then one paper sheet that reads like the PDF it becomes. */
+:root{
+  --bg:#f2f0ed; --paper:#ffffff; --ink:#141312; --muted:#625c56; --line:#ddd8d2; --field:#faf8f6;
+  --band:#111111; --band-ink:#ffffff; --band-muted:#b9b3ad;
+  --accent:#f5540d; --accent-ink:#ffffff; --accent-text:#c2410a; --accent-soft:#fdebe2;
+  --ok:#1f7a45; --ok-soft:#e4f3ea; --bad:#b3261e; --bad-soft:#fbe9e7;
+  --display:"Exo","Inter",system-ui,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0b0b0b; --paper:#181716; --ink:#f3f1ee; --muted:#a8a199; --line:#33302d; --field:#211f1d;
+  --band:#000000; --band-ink:#ffffff; --band-muted:#a8a199;
+  --accent:#f5540d; --accent-ink:#ffffff; --accent-text:#ff8a52; --accent-soft:#3a1c0e;
+  --ok:#6fd198; --ok-soft:#173224; --bad:#ff8f86; --bad-soft:#3b1a17; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0b0b0b; --paper:#181716; --ink:#f3f1ee; --muted:#a8a199; --line:#33302d; --field:#211f1d;
+  --band:#000000; --band-ink:#ffffff; --band-muted:#a8a199;
+  --accent:#f5540d; --accent-ink:#ffffff; --accent-text:#ff8a52; --accent-soft:#3a1c0e;
+  --ok:#6fd198; --ok-soft:#173224; --bad:#ff8f86; --bad-soft:#3b1a17; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body)}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.band{background:var(--band);color:var(--band-ink);border-bottom:4px solid var(--accent);
+  margin-top:calc(-1 * env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+.band-in{max-width:880px;margin:0 auto;padding-block:14px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.logo{display:block;height:44px;width:auto;flex:none}
+.nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;align-items:center}
+.nav button{background:transparent;border:1px solid transparent;color:var(--band-muted);padding:9px 14px;border-radius:var(--r);
+  font:600 14px var(--display);letter-spacing:.03em;cursor:pointer}
+.nav button[aria-current="page"]{color:var(--band-ink);border-color:#444}
+.nav .lang{border-color:#444;color:var(--band-ink);min-width:46px}
+
+main{max-width:880px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:clamp(18px,4vw,40px);display:grid;gap:30px}
+.doc-head{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;align-items:flex-end;
+  border-bottom:2px solid var(--ink);padding-bottom:14px}
+.doc-head h1{font-size:clamp(22px,4.4vw,30px);font-weight:700;letter-spacing:.01em}
+.doc-head p{margin:0;color:var(--muted);font-size:14px}
+.eyebrow{font:600 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text)}
+
+section.blk{display:grid;gap:14px;min-width:0}
+.blk>h2{font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:10px;
+  padding-bottom:8px;border-bottom:1px solid var(--line)}
+.blk>h2::before{content:"";width:10px;height:10px;background:var(--accent);flex:none}
+.grid{display:grid;gap:14px 20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.fld{display:grid;gap:5px;min-width:0}
+.fld.wide{grid-column:1/-1}
+.fld label,.lbl{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.fld input,.fld textarea{background:var(--field);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;width:100%;min-width:0}
+.fld textarea{min-height:110px;resize:vertical}
+.fld input:focus,.fld textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.val{font-size:16.5px;overflow-wrap:anywhere;white-space:pre-wrap}
+.val.empty{color:var(--muted)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative;display:inline-flex}
+.chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.chip span{border:1px solid var(--line);background:var(--field);border-radius:999px;padding:8px 14px;font-size:14.5px}
+.chip input:checked+span{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.chipgrp{display:grid;gap:8px}
+
+.checks{display:grid;gap:2px;list-style:none;margin:0;padding:0}
+.checks label,.checks li.ro{display:flex;gap:12px;align-items:flex-start;padding:10px 4px;border-bottom:1px dashed var(--line);cursor:pointer}
+.checks li.ro{cursor:default}
+.checks input{width:22px;height:22px;accent-color:var(--accent);flex:none;margin:1px 0 0}
+.mark{width:22px;height:22px;flex:none;border-radius:4px;display:grid;place-items:center;font-weight:700;font-size:14px;margin-top:1px}
+.mark.y{background:var(--ok-soft);color:var(--ok)} .mark.n{background:var(--bad-soft);color:var(--bad)}
+
+.photos{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.ph{position:relative;aspect-ratio:4/3;background:var(--field);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;max-width:100%}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph button{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;border:0;background:#111c;color:#fff;font-size:18px;line-height:1;cursor:pointer}
+.ph a{display:block;width:100%;height:100%}
+.drop{border:2px dashed var(--line);border-radius:var(--r);padding:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.drop p{margin:0;color:var(--muted);font-size:14.5px;flex:1 1 220px}
+
+.agree{background:var(--accent-soft);border-left:4px solid var(--accent);padding:14px 16px;margin:0;font-size:15.5px}
+.consent{display:flex;gap:12px;align-items:flex-start;font-weight:500;cursor:pointer}
+.consent input{width:24px;height:24px;accent-color:var(--accent);flex:none;margin:0}
+.sigwrap{display:grid;gap:6px}
+.sigpad{position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--r);height:210px;overflow:hidden}
+.sigpad canvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.sigpad::after{content:"";position:absolute;left:24px;right:24px;bottom:46px;border-bottom:1.5px solid #bbb;pointer-events:none}
+.sigpad .hint{position:absolute;left:24px;bottom:16px;color:#777;font-size:13px;pointer-events:none}
+.sigrow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.sigimg{background:#fff;border:1px solid var(--line);border-radius:var(--r);max-width:min(100%,420px);display:block}
+
+.btn{border:1px solid var(--line);background:var(--paper);border-radius:var(--r);padding:11px 16px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-family:var(--display);letter-spacing:.03em;padding:14px 22px;font-size:17px}
+.btn.danger{color:var(--bad)}
+.btn.small{padding:7px 12px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{margin:0;font-size:14.5px;color:var(--muted);min-height:1.5em}
+.status.err{color:var(--bad);font-weight:600} .status.ok{color:var(--ok);font-weight:600}
+.note{background:var(--field);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;font-size:14.5px;color:var(--muted);margin:0}
+
+.company{border-top:2px solid var(--ink);padding-top:14px;display:grid;gap:10px 28px;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));font-size:13.5px;color:var(--muted)}
+.company strong{display:block;color:var(--ink);font-family:var(--display);font-size:14.5px;margin-bottom:2px}
+.company span{display:block;user-select:all}
+
+.listhead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.listhead h1{font-size:24px}
+.search{flex:1 1 220px;max-width:340px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;min-width:0}
+.rows{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.row{width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;cursor:pointer;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center}
+.row:hover{border-color:var(--accent)}
+.row b{font-family:var(--display);font-size:17px;overflow-wrap:anywhere}
+.row small{color:var(--muted);font-size:13.5px;overflow-wrap:anywhere}
+.row .meta{text-align:right;font-variant-numeric:tabular-nums;font-size:13.5px;color:var(--muted)}
+.pill{display:inline-block;background:var(--ok-soft);color:var(--ok);border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600}
+.empty{background:var(--paper);border:1px dashed var(--line);border-radius:var(--r);padding:34px 20px;text-align:center;color:var(--muted);display:grid;gap:14px;justify-items:center}
+.empty h2{color:var(--ink);font-size:19px}
+.back{margin-bottom:12px}
+@media (prefers-reduced-motion:no-preference){.btn,.row,.chip span{transition:border-color .15s,background-color .15s}}
+</style>
+
+<header class="band"><div class="band-in">
+  <svg class="logo" role="img" aria-label="MB Veranda" xmlns="http://www.w3.org/2000/svg" version="1.1" width="216.19305" height="58.073463" viewBox="0 0 216.19306 58.073464">
+  <g transform="translate(-150.87738,90.352149)">
+    <g transform="translate(69.997109,-155.80002)">
+      <path d="M 719.18,715.391 V 493.59 l -12.418,7.148 -96.063,55.473 -4.097,2.379 v 351.68 l 12.347,-7.11 96.051,-55.461 96.051,-55.429 41.801,-24.149 15.668,-9.019 v -0.043 l 26.21,-15.11 24.719,-14.258 28.36,-16.371 37.312,-21.558 18.039,-10.391 4.14,-2.391 V 558.59 l -4.17,-2.379 -96.06,-55.43 -12.34,-7.152 v 221.762 l -83.64,-48.321 -4.141,-2.379 -4.14,2.379 -83.629,48.321" style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 894.73,743.949 v 185.192 l 12.34,-7.11 96.06,-55.472 4.17,-2.379 v -83.789 l -4.17,-2.422 -83.681,-48.278 -24.719,14.258" style="fill:#f5540d;fill-opacity:1;fill-rule:evenodd;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 1207.38,739.801 v 114.847 h 35.08 l 39.77,-69.418 39.76,69.418 h 35.08 V 739.801 h -29.34 v 72.578 l -33.04,-57.578 h -24.89 l -33.04,57.578 v -72.578 z m 184.42,0 v 114.847 h 66.48 c 22.85,0 34.26,-9.296 34.26,-27.929 v -10 c 0,-3.789 -1.37,-6.989 -4.06,-9.649 l -7.15,-6.992 8.55,-5.816 c 4.5,-3.012 6.72,-7.461 6.72,-13.321 V 767.77 c 0,-18.629 -11.4,-27.969 -34.26,-27.969 z m 29.37,21.648 h 39.96 c 4.07,0 6.14,1.672 6.14,5 v 16.641 c 0,3.32 -2.07,5 -6.14,5 h -39.96 z m 0,48.281 h 35.86 c 4.1,0 6.13,1.68 6.13,5 v 13.321 c 0,3.32 -2.03,5 -6.13,5 h -35.86 V 809.73" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 1198.48,679.84 2.57,3.051 h 15.71 l 42.26,-104.371 h 5.2 l 42.5,104.371 h 15.47 l 2.58,-3.051 -47.47,-114.25 h -31.36 z" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 1358.09,565.59 v 117.301 h 98 v -12.93 h -79.72 V 633.59 h 73.2 v -12.93 h -73.2 v -42.14 h 79.72 v -12.93 z" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 1495.94,565.59 v 117.301 h 71.21 c 22.23,0 33.32,-8.672 33.32,-26.02 V 638.16 c 0,-14.719 -8.05,-23.082 -24.18,-25.148 l 28.51,-44.032 -2.38,-3.39 h -15.47 l -30.27,46.601 h -42.46 V 565.59 Z m 18.28,59.488 h 53.12 c 9.89,0 14.85,3.871 14.85,11.563 v 21.757 c 0,7.731 -4.96,11.563 -14.85,11.563 h -53.12 z" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 1629.41,568.629 49.22,114.262 h 30.04 l 49.22,-114.262 -2.58,-3.039 h -15.04 l -12.42,29.57 h -68.4 l -12.42,-29.57 h -15 z m 35.51,39.461 h 57.5 l -26.13,61.871 h -5.24 z" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 1791.21,565.59 v 117.301 h 20.24 l 79.06,-95.192 v 95.192 h 18.32 V 565.59 h -20.28 l -79.06,95.191 V 565.59 Z" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 1957.34,565.59 v 117.301 h 58.83 c 36.29,0 54.46,-14.18 54.46,-42.5 V 608.09 c 0,-28.32 -18.17,-42.5 -54.46,-42.5 z m 18.32,12.93 h 41.61 c 23.36,0 35.03,9.101 35.03,27.378 v 36.723 c 0,18.238 -11.67,27.34 -35.03,27.34 h -41.61 z" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+      <path d="m 2099.57,568.629 49.22,114.262 h 30.04 l 49.22,-114.262 -2.62,-3.039 h -15 l -12.42,29.57 h -68.4 l -12.42,-29.57 h -15 z m 35.47,39.461 h 57.5 l -26.13,61.871 h -5.2 z" style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" transform="matrix(0.13333333,0,0,-0.13333333,0,189.33333)"></path>
+    </g>
+  </g>
+</svg>
+  <nav class="nav" aria-label="Menu">
+    <button type="button" id="nav-list" data-t="nav_list" aria-current="page">Formulieren</button>
+    <button type="button" id="nav-new" data-t="nav_new">Nieuw formulier</button>
+    <button type="button" id="lang" class="lang" aria-label="Taal / Dil">TR</button>
+  </nav>
+</div></header>
+
+<main>
+<!-- ============ LIST ============ -->
+<div id="v-list">
+  <div class="listhead">
+    <h1 data-t="list_title">Opgeleverde montages</h1>
+    <input id="q" class="search" type="search" data-tp="search_ph" placeholder="Zoek op naam, plaats of ordernummer">
+  </div>
+  <p id="cloud-note" class="note" hidden></p>
+  <div id="list-empty" class="empty">
+    <h2 data-t="empty_title">Nog geen opgeslagen formulieren</h2>
+    <span data-t="empty_body">Ondertekende opleverformulieren verschijnen hier, met pdf en foto's, en blijven in de cloud bewaard.</span>
+    <button type="button" class="btn primary" id="empty-new" data-t="empty_btn">Eerste formulier invullen</button>
+  </div>
+  <ul id="rows" class="rows"></ul>
+</div>
+
+<!-- ============ FORM ============ -->
+<form id="v-form" class="sheet" hidden novalidate>
+  <div class="doc-head">
+    <div><div class="eyebrow">MB Veranda</div><h1 data-t="doc_title">Opleverformulier montage</h1></div>
+    <p data-t="doc_sub">Invullen bij de klant, laten ondertekenen en opslaan.</p>
+  </div>
+
+  <section class="blk"><h2 data-t="s_klant">Klantgegevens</h2>
+    <div class="grid">
+      <div class="fld wide"><label for="f-naam" data-t="l_naam">Naam klant *</label><input id="f-naam" autocomplete="off" required></div>
+      <div class="fld wide"><label for="f-straat" data-t="l_straat">Straat en huisnummer *</label><input id="f-straat" autocomplete="off" required></div>
+      <div class="fld"><label for="f-postcode" data-t="l_postcode">Postcode *</label><input id="f-postcode" autocomplete="off" required></div>
+      <div class="fld"><label for="f-plaats" data-t="l_plaats">Plaats *</label><input id="f-plaats" autocomplete="off" required></div>
+      <div class="fld"><label for="f-tel" data-t="l_tel">Telefoon</label><input id="f-tel" type="tel" inputmode="tel" autocomplete="off"></div>
+      <div class="fld"><label for="f-email" data-t="l_email">E-mail</label><input id="f-email" type="email" inputmode="email" autocomplete="off"></div>
+    </div>
+  </section>
+
+  <section class="blk"><h2 data-t="s_montage">Montage</h2>
+    <div class="grid">
+      <div class="fld"><label for="f-order" data-t="l_order">Ordernummer</label><input id="f-order" autocomplete="off"></div>
+      <div class="fld"><label for="f-datum" data-t="l_datum">Montagedatum *</label><input id="f-datum" type="date" required></div>
+      <div class="fld wide"><label for="f-monteur" data-t="l_monteur">Monteur(s)</label><input id="f-monteur" autocomplete="off"></div>
+    </div>
+    <div class="chipgrp"><span class="lbl" data-t="l_product">Geplaatst product</span><div id="chips" class="chips"></div></div>
+    <div class="fld"><label for="f-overig" data-t="l_overig">Overig / uitvoering (maat, kleur, opties)</label><input id="f-overig" autocomplete="off"></div>
+  </section>
+
+  <section class="blk"><h2 data-t="s_check">Controle bij oplevering</h2>
+    <ul id="checks" class="checks"></ul>
+  </section>
+
+  <section class="blk"><h2 data-t="s_opm">Opmerkingen en restpunten</h2>
+    <div class="fld"><label for="f-opm" data-t="l_opm">Wat moet nog gebeuren of is afgesproken?</label><textarea id="f-opm"></textarea></div>
+  </section>
+
+  <section class="blk"><h2 data-t="s_foto">Foto's van de montage</h2>
+    <div class="drop">
+      <p data-t="foto_hint">Maak foto's of kies ze uit de galerij. Ze worden verkleind en bij dit formulier bewaard.</p>
+      <label class="btn" for="f-fotos"><span data-t="foto_btn">Foto's toevoegen</span></label>
+      <input id="f-fotos" type="file" accept="image/*" multiple hidden>
+    </div>
+    <div id="form-photos" class="photos"></div>
+  </section>
+
+  <section class="blk"><h2 data-t="s_akkoord">Akkoord klant</h2>
+    <p class="agree" id="agree-text"></p>
+    <div class="grid">
+      <div class="fld"><label for="f-akk-naam" data-t="l_akk_naam">Naam ondertekenaar *</label><input id="f-akk-naam" autocomplete="off"></div>
+      <div class="fld"><label for="f-akk-plaats" data-t="l_akk_plaats">Plaats</label><input id="f-akk-plaats" autocomplete="off"></div>
+    </div>
+    <label class="consent" for="f-akkoord"><input id="f-akkoord" type="checkbox"><span data-t="consent">Ik ga akkoord met de oplevering van de montage.</span></label>
+    <div class="sigwrap">
+      <div class="sigrow"><span class="lbl" data-t="l_sig">Handtekening klant *</span>
+        <button type="button" class="btn small" id="sig-clear" data-t="sig_clear">Wissen</button></div>
+      <div class="sigpad"><canvas id="sig" aria-label="Handtekening"></canvas><span class="hint" data-t="sig_hint">Teken hier met vinger of pen</span></div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button type="submit" class="btn primary" id="save" data-t="save">Ondertekend formulier opslaan</button>
+    <button type="button" class="btn" id="clear-form" data-t="reset">Formulier leegmaken</button>
+  </div>
+  <p id="save-status" class="status" role="status" aria-live="polite"></p>
+
+  <footer class="company">
+    <div><strong>MB Veranda B.V.</strong><span>Adriaan Mulderweg 4</span><span>5657 EM Eindhoven</span></div>
+    <div><strong data-t="c_contact">Contact</strong><span>085 - 01 87 567</span><span>info@mbveranda.nl</span><span>mbveranda.nl</span></div>
+    <div><strong data-t="c_bedrijf">Bedrijfsgegevens</strong><span>KvK 87719932</span><span>BTW NL864382832B01</span></div>
+  </footer>
+</form>
+
+<!-- ============ DETAIL ============ -->
+<div id="v-detail" hidden>
+  <button type="button" class="btn small back" id="back" data-t="back">← Alle formulieren</button>
+  <div class="sheet" id="detail-sheet"></div>
+</div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(() => {
+"use strict";
+/* ---------- constants ---------- */
+const COMPANY = { name:"MB Veranda B.V.", street:"Adriaan Mulderweg 4", city:"5657 EM Eindhoven", tel:"085 - 01 87 567",
+  mail:"info@mbveranda.nl", web:"mbveranda.nl", kvk:"KvK 87719932", btw:"BTW NL864382832B01" };
+const PRODUCTS = ["MB Solid veranda","MB Bold veranda","MB Cube veranda","MB Cube Grand veranda","MB Prime lamellendak",
+  "MB Dynamic lamellendak","MB Advanced lamellendak","MB Adaptive pergola","MB Carport","MB Solid tuinkamer","MB Bold tuinkamer",
+  "MB Cube tuinkamer","MB Cube Grand tuinkamer","MB Schuifwand","MB Schuifpui","MB Vaste wand","MB Bovendakzonwering",
+  "MB Onderdakzonwering","MB Screens"];
+const CHECKS = [
+  ["c1","Het product is geplaatst volgens de bestelling.","Ürün siparişe uygun şekilde monte edildi."],
+  ["c2","Geen zichtbare schade aan product, glas of profielen.","Üründe, camda veya profillerde görünür hasar yok."],
+  ["c3","De werking is gedemonstreerd en uitgelegd.","Ürünün çalışması gösterildi ve anlatıldı."],
+  ["c4","Afwatering en afdichting zijn gecontroleerd.","Su tahliyesi ve sızdırmazlık kontrol edildi."],
+  ["c5","De werkplek is schoon en opgeruimd achtergelaten.","Çalışma alanı temiz ve düzenli bırakıldı."],
+  ["c6","Geen schade aan woning, bestrating of tuin.","Evde, zeminde veya bahçede hasar yok."]];
+const AGREE = [
+  "Ondergetekende verklaart dat de montage is uitgevoerd en opgeleverd, dat het werk samen met de monteur is gecontroleerd en dat hij/zij akkoord gaat met de oplevering. Eventuele opmerkingen en restpunten staan hierboven vermeld.",
+  "Aşağıda imzası bulunan kişi; montajın yapıldığını ve teslim edildiğini, işin montajcı ile birlikte kontrol edildiğini ve teslimatı onayladığını beyan eder. Varsa notlar ve eksik kalan işler yukarıda belirtilmiştir."];
+const COLL = "opleveringen";
+
+/* ---------- i18n: page is written in Dutch; Turkish overrides for the installer ---------- */
+const TR = { nav_list:"Formlar", nav_new:"Yeni form", list_title:"Teslim edilen montajlar", search_ph:"İsim, şehir veya sipariş no ile ara",
+  empty_title:"Henüz kayıtlı form yok", empty_body:"İmzalanan teslim formları, PDF ve fotoğraflarıyla burada görünür ve bulutta saklanır.",
+  empty_btn:"İlk formu doldur", doc_title:"Montaj teslim formu", doc_sub:"Müşterinin yanında doldurun, imzalatın ve kaydedin.",
+  s_klant:"Müşteri bilgileri", l_naam:"Müşteri adı *", l_straat:"Sokak ve kapı no *", l_postcode:"Posta kodu *", l_plaats:"Şehir *",
+  l_tel:"Telefon", l_email:"E-posta", s_montage:"Montaj", l_order:"Sipariş numarası", l_datum:"Montaj tarihi *", l_monteur:"Montajcı(lar)",
+  l_product:"Monte edilen ürün", l_overig:"Diğer / detay (ölçü, renk, opsiyonlar)", s_check:"Teslim kontrolü", s_opm:"Notlar ve eksik işler",
+  l_opm:"Yapılacak veya üzerinde anlaşılan ne var?", s_foto:"Montaj fotoğrafları",
+  foto_hint:"Fotoğraf çekin veya galeriden seçin. Küçültülür ve bu formla birlikte saklanır.", foto_btn:"Fotoğraf ekle",
+  s_akkoord:"Müşteri onayı", l_akk_naam:"İmzalayanın adı *", l_akk_plaats:"Yer", consent:"Montajın teslimini onaylıyorum.",
+  l_sig:"Müşteri imzası *", sig_clear:"Temizle", sig_hint:"Parmak veya kalemle buraya imzalayın", save:"İmzalı formu kaydet",
+  reset:"Formu temizle", c_contact:"İletişim", c_bedrijf:"Şirket bilgileri", back:"← Tüm formlar" };
+const M = { // dynamic strings [nl, tr]
+  loading:["Formulieren laden…","Formlar yükleniyor…"],
+  slow:["De cloud reageert nog niet. Controleer de verbinding; de lijst verschijnt zodra er contact is.","Bulut henüz yanıt vermiyor. Bağlantıyı kontrol edin; liste bağlantı kurulunca görünür."],
+  nocloud:["Cloudopslag is in deze weergave niet beschikbaar. Open de pagina ingelogd als eigenaar of bewerker om formulieren op te slaan.","Bulut depolama bu görünümde kullanılamıyor. Form kaydetmek için sayfayı sahip veya düzenleyici olarak açın."],
+  need:["Vul eerst in: ","Önce doldurun: "], need_sig:["handtekening","imza"], need_ok:["akkoord aanvinken","onay kutusu"],
+  st_sig:["Handtekening uploaden…","İmza yükleniyor…"], st_ph:["Foto {i} van {n} uploaden…","Fotoğraf {i}/{n} yükleniyor…"],
+  st_pdf:["Pdf maken…","PDF oluşturuluyor…"], st_pdfup:["Pdf uploaden…","PDF yükleniyor…"], st_doc:["Formulier opslaan…","Form kaydediliyor…"],
+  saved:["Opgeslagen in de cloud.","Buluta kaydedildi."],
+  fail:["Opslaan is niet gelukt ({c}). Uw invoer staat er nog; probeer het opnieuw.","Kaydedilemedi ({c}). Girdiğiniz bilgiler duruyor; tekrar deneyin."],
+  nopdf:["Opgeslagen, maar de pdf kon niet worden gemaakt.","Kaydedildi, ancak PDF oluşturulamadı."],
+  signed:["Ondertekend","İmzalandı"], photos:["foto's","fotoğraf"], d_pdf:["Pdf downloaden","PDF indir"], d_open:["Pdf openen","PDF aç"],
+  d_add:["Foto's toevoegen","Fotoğraf ekle"], d_del:["Formulier verwijderen","Formu sil"], d_del2:["Zeker weten? Tik nogmaals om definitief te verwijderen","Emin misiniz? Kalıcı olarak silmek için tekrar dokunun"],
+  d_none:["Geen foto's toegevoegd.","Fotoğraf eklenmedi."], d_signed_on:["Ondertekend op","İmza tarihi"], d_by:["Ondertekend door","İmzalayan"],
+  d_place:["Plaats","Yer"], yes:["Ja","Evet"], no:["Nee","Hayır"], dl_fail:["Downloaden is niet gelukt.","İndirilemedi."],
+  dl_ok:["Pdf opgeslagen.","PDF kaydedildi."], deleted:["Formulier verwijderd.","Form silindi."], updating:["Foto's toevoegen en pdf bijwerken…","Fotoğraflar ekleniyor, PDF güncelleniyor…"],
+  updated:["Foto's toegevoegd.","Fotoğraflar eklendi."], nopdf_d:["Voor dit formulier is geen pdf opgeslagen.","Bu form için kayıtlı PDF yok."],
+  remove:["Foto verwijderen","Fotoğrafı kaldır"] };
+let lang = "nl";
+try { lang = localStorage.getItem("mbv-lang") === "tr" ? "tr" : "nl"; } catch {}
+const m = (k, v = {}) => M[k][lang === "tr" ? 1 : 0].replace(/\{(\w+)\}/g, (_, x) => v[x]);
+const NL = {};
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => { const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) { if (v == null || v === false) continue;
+    if (k === "class") e.className = v; else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? "" : v); }
+  for (const k of kids.flat()) if (k != null) e.append(k); return e; };
+
+function applyLang() {
+  document.querySelectorAll("[data-t]").forEach(e => { const k = e.dataset.t; NL[k] ??= e.textContent; e.textContent = lang === "tr" ? (TR[k] || NL[k]) : NL[k]; });
+  document.querySelectorAll("[data-tp]").forEach(e => { const k = e.dataset.tp; NL[k] ??= e.placeholder; e.placeholder = lang === "tr" ? (TR[k] || NL[k]) : NL[k]; });
+  $("#lang").textContent = lang === "tr" ? "NL" : "TR";
+  $("#agree-text").textContent = AGREE[lang === "tr" ? 1 : 0];
+  document.querySelectorAll("#checks span").forEach((s, i) => s.textContent = CHECKS[i][lang === "tr" ? 2 : 1]);
+  renderList(); if (current) renderDetail(current);
+}
+$("#lang").addEventListener("click", () => { lang = lang === "tr" ? "nl" : "tr"; try { localStorage.setItem("mbv-lang", lang); } catch {} applyLang(); });
+
+/* ---------- static form parts ---------- */
+PRODUCTS.forEach((p, i) => $("#chips").append(el("label", { class: "chip" }, el("input", { type: "checkbox", name: "prod", value: p, id: "f-prod-" + i }), el("span", { text: p }))));
+CHECKS.forEach(([k, nl]) => $("#checks").append(el("li", {}, el("label", { for: "f-" + k }, el("input", { type: "checkbox", name: "chk", value: k, id: "f-" + k }), el("span", { text: nl })))));
+
+/* ---------- views ---------- */
+let current = null;
+function show(v) { for (const n of ["list", "form", "detail"]) $("#v-" + n).hidden = n !== v;
+  $("#nav-list").toggleAttribute("aria-current", v !== "form"); $("#nav-new").toggleAttribute("aria-current", v === "form");
+  if (v !== "form") $("#nav-list").setAttribute("aria-current", "page"); else $("#nav-new").setAttribute("aria-current", "page");
+  if (v === "form") requestAnimationFrame(sigResize); if (v !== "detail") current = null; window.scrollTo(0, 0); }
+$("#nav-list").addEventListener("click", () => show("list"));
+$("#nav-new").addEventListener("click", () => show("form"));
+$("#empty-new").addEventListener("click", () => show("form"));
+$("#back").addEventListener("click", () => show("list"));
+
+/* ---------- signature pad (strokes kept normalised so resize and export stay sharp) ---------- */
+const sig = $("#sig"), sg = sig.getContext("2d"); let strokes = [], drawing = null;
+function sigPaint(g, w, h, lw) { g.lineCap = g.lineJoin = "round"; g.strokeStyle = "#111"; g.fillStyle = "#111"; g.lineWidth = lw;
+  for (const s of strokes) { if (s.length === 1) { g.beginPath(); g.arc(s[0][0] * w, s[0][1] * h, lw / 2, 0, 7); g.fill(); continue; }
+    g.beginPath(); g.moveTo(s[0][0] * w, s[0][1] * h); for (const p of s.slice(1)) g.lineTo(p[0] * w, p[1] * h); g.stroke(); } }
+function sigResize() { const r = sig.getBoundingClientRect(); if (!r.width) return; const d = window.devicePixelRatio || 1;
+  sig.width = Math.round(r.width * d); sig.height = Math.round(r.height * d); sg.setTransform(d, 0, 0, d, 0, 0); sg.clearRect(0, 0, r.width, r.height); sigPaint(sg, r.width, r.height, 2.4); }
+const sigPt = e => { const r = sig.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+sig.addEventListener("pointerdown", e => { e.preventDefault(); sig.setPointerCapture(e.pointerId); drawing = [sigPt(e)]; strokes.push(drawing); sigResize(); });
+sig.addEventListener("pointermove", e => { if (!drawing) return; e.preventDefault(); drawing.push(sigPt(e)); const r = sig.getBoundingClientRect(); sigPaint(sg, r.width, r.height, 2.4); });
+for (const t of ["pointerup", "pointercancel"]) sig.addEventListener(t, () => { drawing = null; });
+$("#sig-clear").addEventListener("click", () => { strokes = []; sigResize(); });
+window.addEventListener("resize", sigResize);
+function sigBlob() { const c = document.createElement("canvas"); c.width = 1000; c.height = Math.round(1000 * (sig.clientHeight || 210) / (sig.clientWidth || 600));
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); sigPaint(g, c.width, c.height, 4.5);
+  return new Promise(r => c.toBlob(r, "image/png")); }
+
+/* ---------- photos ---------- */
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej({ code: "image" }); i.src = src; });
+async function shrink(file) { const url = URL.createObjectURL(file);
+  try { const img = await loadImg(url); const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); return await new Promise(r => c.toBlob(r, "image/jpeg", 0.82)); }
+  finally { URL.revokeObjectURL(url); } }
+let formPhotos = []; // {blob,url,id?}
+function renderFormPhotos() { const box = $("#form-photos"); box.replaceChildren();
+  formPhotos.forEach((p, i) => box.append(el("div", { class: "ph" }, el("img", { src: p.url, alt: "" }),
+    el("button", { type: "button", "aria-label": m("remove"), text: "×", onclick: () => { URL.revokeObjectURL(p.url); formPhotos.splice(i, 1); renderFormPhotos(); } })))); }
+$("#f-fotos").addEventListener("change", async e => { for (const f of e.target.files) { try { const b = await shrink(f); if (b) formPhotos.push({ blob: b, url: URL.createObjectURL(b) }); } catch {} }
+  e.target.value = ""; renderFormPhotos(); });
+
+/* ---------- form data + draft ---------- */
+const F = id => $("#f-" + id), V = id => F(id).value.trim();
+function collect() { return {
+  klant: { naam: V("naam"), straat: V("straat"), postcode: V("postcode"), plaats: V("plaats"), tel: V("tel"), email: V("email") },
+  project: { order: V("order"), datum: V("datum"), monteur: V("monteur"), overig: V("overig"),
+    producten: [...document.querySelectorAll("input[name=prod]:checked")].map(i => i.value) },
+  checks: Object.fromEntries([...document.querySelectorAll("input[name=chk]")].map(i => [i.value, i.checked])),
+  opmerkingen: V("opm"), akkoord: { naam: V("akk-naam"), plaats: V("akk-plaats") } }; }
+function fill(d) { if (!d) return; const s = (id, v) => { if (v != null) F(id).value = v; };
+  for (const k of ["naam", "straat", "postcode", "plaats", "tel", "email"]) s(k, d.klant?.[k]);
+  for (const k of ["order", "datum", "monteur", "overig"]) s(k, d.project?.[k]);
+  document.querySelectorAll("input[name=prod]").forEach(i => i.checked = !!d.project?.producten?.includes(i.value));
+  document.querySelectorAll("input[name=chk]").forEach(i => i.checked = !!d.checks?.[i.value]);
+  s("opm", d.opmerkingen); s("akk-naam", d.akkoord?.naam); s("akk-plaats", d.akkoord?.plaats); }
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+let draftT; const form = $("#v-form");
+form.addEventListener("input", () => { clearTimeout(draftT); draftT = setTimeout(() => { try { localStorage.setItem("mbv-draft", JSON.stringify(collect())); } catch {} }, 500); });
+function resetForm() { form.reset(); F("datum").value = today(); strokes = []; sigResize(); formPhotos.forEach(p => URL.revokeObjectURL(p.url)); formPhotos = []; renderFormPhotos();
+  try { localStorage.removeItem("mbv-draft"); } catch {} status(""); }
+$("#clear-form").addEventListener("click", resetForm);
+try { fill(JSON.parse(localStorage.getItem("mbv-draft") || "null")); } catch {}
+if (!F("datum").value) F("datum").value = today();
+const status = (t, cls = "") => { const s = $("#save-status"); s.textContent = t; s.className = "status " + cls; };
+
+/* ---------- formatting ---------- */
+const loc = () => lang === "tr" ? "tr-TR" : "nl-NL";
+const fmtDate = (iso, l = loc()) => { if (!iso) return ""; const d = new Date(iso.length === 10 ? iso + "T12:00:00" : iso); return isNaN(d) ? iso : d.toLocaleDateString(l, { day: "numeric", month: "long", year: "numeric" }); };
+const fmtDT = (iso, l = loc()) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(l, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }); };
+const prodText = r => [...(r.project?.producten || []), r.project?.overig].filter(Boolean).join(", ");
+
+/* ---------- PDF: A4 pages drawn on canvas (any alphabet renders), wrapped into a pdf by jsPDF ---------- */
+let logoImg;
+async function getLogo() { if (logoImg) return logoImg; const svg = new XMLSerializer().serializeToString($("svg.logo"));
+  const u = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" })); try { logoImg = await loadImg(u); } finally { URL.revokeObjectURL(u); } return logoImg; }
+async function buildPdf(rec, sigSrc, photoSrcs) {
+  if (!window.jspdf) throw { code: "pdf_lib" };
+  try { await Promise.all([document.fonts.load('700 30px Exo'), document.fonts.load('600 20px Exo'), document.fonts.load('400 24px Inter'), document.fonts.load('600 24px Inter')]); } catch {}
+  const PW = 1240, PH = 1754, MX = 90, CW = PW - 2 * MX, BOTTOM = PH - 130, DISP = 'Exo, Inter, Arial, sans-serif', BODY = 'Inter, Arial, sans-serif';
+  const logo = await getLogo(), pages = []; let g, y;
+  const page = () => { const c = document.createElement("canvas"); c.width = PW; c.height = PH; g = c.getContext("2d"); pages.push(c);
+    g.fillStyle = "#fff"; g.fillRect(0, 0, PW, PH); g.fillStyle = "#111"; g.fillRect(0, 0, PW, 150); g.fillStyle = "#f5540d"; g.fillRect(0, 150, PW, 7);
+    g.drawImage(logo, MX, 39, 268, 72);
+    g.textAlign = "right"; g.fillStyle = "#fff"; g.font = "700 30px " + DISP; g.fillText("OPLEVERFORMULIER MONTAGE", PW - MX, 72);
+    g.fillStyle = "#b9b3ad"; g.font = "400 21px " + BODY; g.fillText([rec.project.order && "Order " + rec.project.order, fmtDate(rec.project.datum, "nl-NL")].filter(Boolean).join("  ·  "), PW - MX, 108);
+    g.textAlign = "left"; g.fillStyle = "#111"; g.fillRect(MX, PH - 122, CW, 2);
+    g.fillStyle = "#555"; g.font = "600 19px " + DISP; g.fillText(COMPANY.name, MX, PH - 88);
+    g.font = "400 18px " + BODY; g.fillText([COMPANY.street, COMPANY.city, COMPANY.tel, COMPANY.mail, COMPANY.web].join("  ·  "), MX, PH - 60);
+    g.fillText(COMPANY.kvk + "  ·  " + COMPANY.btw, MX, PH - 34); y = 215; };
+  const ensure = h => { if (y + h > BOTTOM) page(); };
+  const wrap = (text, maxW) => { const out = []; for (const para of String(text).split(/\r?\n/)) { let line = "";
+      for (let w of para.split(/\s+/)) { while (g.measureText(w).width > maxW) { let n = w.length; while (n > 1 && g.measureText(w.slice(0, n)).width > maxW) n--; if (line) { out.push(line); line = ""; } out.push(w.slice(0, n)); w = w.slice(n); }
+        const t = line ? line + " " + w : w; if (g.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
+      out.push(line); } return out; };
+  const section = t => { ensure(120); y += 14; g.fillStyle = "#f5540d"; g.fillRect(MX, y - 15, 14, 14); g.fillStyle = "#111"; g.font = "700 21px " + DISP;
+    g.fillText(t.toUpperCase().split("").join(" "), MX + 26, y); y += 14; g.fillStyle = "#ddd8d2"; g.fillRect(MX, y, CW, 2); y += 38; };
+  const fields = list => { const colW = (CW - 40) / 2; for (let i = 0; i < list.length; i += 2) { const pair = list.slice(i, i + 2);
+      g.font = "400 25px " + BODY; const lines = pair.map(([, v]) => wrap(v || "–", colW)); const h = 30 + Math.max(...lines.map(l => l.length)) * 33 + 16; ensure(h);
+      pair.forEach(([l], j) => { const x = MX + j * (colW + 40); g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY; g.fillText(l.toUpperCase(), x, y);
+        g.fillStyle = "#111"; g.font = "400 25px " + BODY; lines[j].forEach((t, k) => g.fillText(t, x, y + 34 + k * 33)); }); y += h; } };
+  const para = (text, size = 24, color = "#111") => { g.font = "400 " + size + "px " + BODY; for (const l of wrap(text, CW)) { ensure(size + 12); g.fillStyle = color; g.font = "400 " + size + "px " + BODY; g.fillText(l, MX, y); y += size + 10; } };
+
+  page();
+  section("Klantgegevens");
+  fields([["Naam", rec.klant.naam], ["Telefoon", rec.klant.tel], ["Adres", rec.klant.straat + "\n" + [rec.klant.postcode, rec.klant.plaats].filter(Boolean).join(" ")], ["E-mail", rec.klant.email]]);
+  section("Montage");
+  fields([["Ordernummer", rec.project.order], ["Montagedatum", fmtDate(rec.project.datum, "nl-NL")], ["Geplaatst product", prodText(rec)], ["Monteur(s)", rec.project.monteur]]);
+  section("Controle bij oplevering");
+  for (const [k, nl] of CHECKS) { g.font = "400 24px " + BODY; const lines = wrap(nl, CW - 150); ensure(lines.length * 32 + 14); const on = !!rec.checks[k];
+    g.lineWidth = 2; g.strokeStyle = "#111"; if (on) { g.fillStyle = "#111"; g.fillRect(MX, y - 22, 26, 26); g.strokeStyle = "#fff"; g.lineWidth = 3.5; g.beginPath(); g.moveTo(MX + 6, y - 9); g.lineTo(MX + 11, y - 3); g.lineTo(MX + 20, y - 16); g.stroke(); }
+    else g.strokeRect(MX + 1, y - 21, 24, 24);
+    g.fillStyle = "#111"; g.font = "400 24px " + BODY; lines.forEach((t, i) => g.fillText(t, MX + 44, y + i * 32));
+    g.textAlign = "right"; g.font = "600 22px " + BODY; g.fillStyle = on ? "#111" : "#b3261e"; g.fillText(on ? "Ja" : "Nee", PW - MX, y); g.textAlign = "left"; y += lines.length * 32 + 14; }
+  y += 10; section("Opmerkingen en restpunten"); para(rec.opmerkingen || "Geen opmerkingen."); y += 14;
+  section("Akkoord klant"); para(AGREE[0], 22, "#333"); y += 16; ensure(215);
+  const top = y; g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY;
+  [["ONDERTEKEND DOOR", rec.akkoord.naam], ["PLAATS", rec.akkoord.plaats || rec.klant.plaats], ["DATUM EN TIJD", fmtDT(rec.akkoord.signedAt, "nl-NL")]].forEach(([l, v], i) => {
+    g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY; g.fillText(l, MX, top + 8 + i * 72); g.fillStyle = "#111"; g.font = "400 25px " + BODY; g.fillText(wrap(v || "–", 440)[0], MX, top + 42 + i * 72); });
+  const bx = MX + 480, bw = CW - 480, bh = 220; g.strokeStyle = "#111"; g.lineWidth = 2; g.strokeRect(bx, top - 14, bw, bh);
+  if (sigSrc) { try { const s = await loadImg(sigSrc); const k = Math.min((bw - 30) / s.naturalWidth, (bh - 50) / s.naturalHeight); g.drawImage(s, bx + (bw - s.naturalWidth * k) / 2, top - 14 + (bh - 36 - s.naturalHeight * k) / 2, s.naturalWidth * k, s.naturalHeight * k); } catch {} }
+  g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY; g.fillText("HANDTEKENING KLANT", bx + 16, top - 14 + bh - 14); y = top + bh + 20;
+
+  const cw = (CW - 30) / 2, ch = 420;
+  for (let i = 0; i < photoSrcs.length; i++) { if (i % 6 === 0) { page(); section("Foto's van de montage (" + photoSrcs.length + ")"); }
+    const j = i % 6, x = MX + (j % 2) * (cw + 30), yy = y + Math.floor(j / 2) * (ch + 30); g.fillStyle = "#f2f0ed"; g.fillRect(x, yy, cw, ch);
+    try { const im = await loadImg(photoSrcs[i]); const k = Math.min(cw / im.naturalWidth, ch / im.naturalHeight); g.drawImage(im, x + (cw - im.naturalWidth * k) / 2, yy + (ch - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k); } catch {} }
+  const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", compress: true });
+  pages.forEach((c, i) => { const x = c.getContext("2d"); x.textAlign = "right"; x.fillStyle = "#555"; x.font = "400 18px " + BODY; x.fillText("Pagina " + (i + 1) + " van " + pages.length, PW - MX, PH - 34);
+    if (i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg", 0.88), "JPEG", 0, 0, 210, 297, undefined, "FAST"); });
+  return pdf.output("blob");
+}
+window.__mbvBuildPdf = buildPdf; // kept reachable for one-off checks
+
+/* ---------- cloud ---------- */
+let db = null, assets = null, downloads = null, records = [], listState = "loading";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function upload(blob, type) { try { return (await assets.upload(blob, { type })).id; }
+  catch (e) { if (e?.code !== "store_unavailable") throw e; await sleep(1200); return (await assets.upload(blob, { type })).id; } }
+const blobUrl = id => "/_blob/" + id;
+
+form.addEventListener("submit", async e => { e.preventDefault(); const rec = collect(), miss = [];
+  for (const [id, key] of [["naam", "l_naam"], ["straat", "l_straat"], ["postcode", "l_postcode"], ["plaats", "l_plaats"], ["datum", "l_datum"]]) if (!V(id)) miss.push((lang === "tr" ? TR[key] : NL[key]).replace(" *", ""));
+  if (!rec.akkoord.naam) { F("akk-naam").value = rec.akkoord.naam = rec.klant.naam; }
+  if (!F("akkoord").checked) miss.push(m("need_ok")); if (!strokes.length) miss.push(m("need_sig"));
+  if (miss.length) return status(m("need") + miss.join(", "), "err");
+  if (!db || !assets) return status(m("nocloud"), "err");
+  const btn = $("#save"); btn.disabled = true;
+  try { rec.akkoord.signedAt ??= new Date().toISOString(); rec.createdAt = rec.akkoord.signedAt;
+    status(m("st_sig")); const sb = await sigBlob(); rec.signatureId = await upload(sb, "image/png");
+    for (let i = 0; i < formPhotos.length; i++) { status(m("st_ph", { i: i + 1, n: formPhotos.length })); formPhotos[i].id ??= await upload(formPhotos[i].blob, "image/jpeg"); }
+    rec.photoIds = formPhotos.map(p => p.id); rec.pdfId = null; let pdfOk = true;
+    try { status(m("st_pdf")); const su = URL.createObjectURL(sb); const pdf = await buildPdf(rec, su, formPhotos.map(p => p.url)); URL.revokeObjectURL(su);
+      status(m("st_pdfup")); rec.pdfId = await upload(pdf, "application/pdf"); } catch (err) { pdfOk = false; console.error(err); }
+    status(m("st_doc")); const ref = db.collection(COLL).doc(); await ref.set(rec); rec.id = ref.id;
+    resetForm(); current = rec; show("detail"); current = rec; renderDetail(rec, pdfOk ? m("saved") : m("nopdf"), pdfOk ? "ok" : "err");
+  } catch (err) { console.error(err); status(m("fail", { c: err?.code || "error" }), "err"); }
+  finally { btn.disabled = false; } });
+
+/* ---------- list ---------- */
+function renderList() { const q = $("#q").value.trim().toLowerCase(), rows = $("#rows"); rows.replaceChildren();
+  const note = $("#cloud-note"); note.hidden = !(listState === "loading" || listState === "slow" || listState === "nocloud"); if (!note.hidden) note.textContent = m(listState);
+  const hit = records.filter(r => !q || [r.klant?.naam, r.klant?.plaats, r.klant?.postcode, r.project?.order, r.klant?.straat].join(" ").toLowerCase().includes(q));
+  $("#list-empty").hidden = records.length > 0 || listState === "loading";
+  for (const r of hit) rows.append(el("li", {}, el("button", { type: "button", class: "row", onclick: () => { current = r; show("detail"); current = r; renderDetail(r); } },
+    el("div", {}, el("b", { text: r.klant?.naam || "–" }), el("br"), el("small", { text: [r.klant?.straat, [r.klant?.postcode, r.klant?.plaats].filter(Boolean).join(" ")].filter(Boolean).join(", ") })),
+    el("div", { class: "meta" }, el("span", { class: "pill", text: m("signed") }), el("br"),
+      el("span", { text: [fmtDate(r.project?.datum), r.project?.order && "#" + r.project.order, (r.photoIds?.length || 0) + " " + m("photos")].filter(Boolean).join(" · ") }))))); }
+$("#q").addEventListener("input", renderList);
+
+/* ---------- detail ---------- */
+function renderDetail(r, msg = "", cls = "") { const s = $("#detail-sheet"); const kv = (l, v) => el("div", { class: "fld" }, el("span", { class: "lbl", text: l }), el("span", { class: "val" + (v ? "" : " empty"), text: v || "–" }));
+  const L = k => (lang === "tr" ? TR[k] : NL[k]).replace(" *", ""); const st = el("p", { class: "status " + cls, role: "status", text: msg });
+  const say = (t, c = "") => { st.textContent = t; st.className = "status " + c; };
+  const addIn = el("input", { type: "file", accept: "image/*", multiple: true, hidden: true, id: "d-add-photos" });
+  addIn.addEventListener("change", async e => { const files = [...e.target.files]; if (!files.length || !assets || !db) return; say(m("updating"));
+    try { const ids = [...(r.photoIds || [])]; for (const f of files) { const b = await shrink(f); ids.push(await upload(b, "image/jpeg")); }
+      await db.collection(COLL).doc(r.id).update({ photoIds: ids }); r = { ...r, photoIds: ids }; const old = r.pdfId;
+      try { const pdf = await buildPdf(r, r.signatureId && blobUrl(r.signatureId), ids.map(blobUrl)); const pid = await upload(pdf, "application/pdf");
+        await db.collection(COLL).doc(r.id).update({ pdfId: pid }); r = { ...r, pdfId: pid }; if (old) assets.delete(old).catch(() => {}); } catch (err) { console.error(err); }
+      current = r; renderDetail(r, m("updated"), "ok"); } catch (err) { console.error(err); say(m("fail", { c: err?.code || "error" }), "err"); } });
+  let armed = false; const del = el("button", { type: "button", class: "btn danger", text: m("d_del"), onclick: async () => {
+    if (!armed) { armed = true; del.textContent = m("d_del2"); setTimeout(() => { armed = false; del.textContent = m("d_del"); }, 5000); return; }
+    try { await db.collection(COLL).doc(r.id).delete(); for (const id of [r.pdfId, r.signatureId, ...(r.photoIds || [])]) if (id) assets?.delete(id).catch(() => {});
+      records = records.filter(x => x.id !== r.id); show("list"); renderList(); } catch (err) { say(m("fail", { c: err?.code || "error" }), "err"); } } });
+  const fname = ("Oplevering_" + [r.project?.order, r.klant?.naam, r.project?.datum].filter(Boolean).join("_")).replace(/[^\p{L}\p{N}_-]+/gu, "-").slice(0, 90) + ".pdf";
+  const dl = r.pdfId ? (downloads ? el("button", { type: "button", class: "btn primary", text: m("d_pdf"), onclick: async () => { try { const b = await (await fetch(blobUrl(r.pdfId))).blob(); await downloads.save({ filename: fname, data: b }); say(m("dl_ok"), "ok"); }
+        catch (err) { if (err?.code !== "declined") say(m("dl_fail"), "err"); } } })
+      : el("a", { class: "btn primary", href: blobUrl(r.pdfId), target: "_blank", rel: "noopener", text: m("d_open") })) : el("span", { class: "note", text: m("nopdf_d") });
+  s.replaceChildren(
+    el("div", { class: "doc-head" }, el("div", {}, el("div", { class: "eyebrow", text: "MB Veranda" }), el("h1", { text: L("doc_title") })),
+      el("p", {}, el("span", { class: "pill", text: m("signed") }), " ", fmtDT(r.akkoord?.signedAt || r.createdAt))),
+    el("div", { class: "actions" }, dl, r.pdfId && downloads ? el("a", { class: "btn", href: blobUrl(r.pdfId), target: "_blank", rel: "noopener", text: m("d_open") }) : null,
+      assets && db ? el("label", { class: "btn", for: "d-add-photos", text: m("d_add") }) : null, addIn), st,
+    el("section", { class: "blk" }, el("h2", { text: L("s_klant") }), el("div", { class: "grid" }, kv(L("l_naam"), r.klant?.naam), kv(L("l_tel"), r.klant?.tel),
+      kv(L("l_straat"), [r.klant?.straat, [r.klant?.postcode, r.klant?.plaats].filter(Boolean).join(" ")].filter(Boolean).join("\n")), kv(L("l_email"), r.klant?.email))),
+    el("section", { class: "blk" }, el("h2", { text: L("s_montage") }), el("div", { class: "grid" }, kv(L("l_order"), r.project?.order), kv(L("l_datum"), fmtDate(r.project?.datum)),
+      kv(L("l_product"), prodText(r)), kv(L("l_monteur"), r.project?.monteur))),
+    el("section", { class: "blk" }, el("h2", { text: L("s_check") }), el("ul", { class: "checks" }, CHECKS.map(([k, nl, tr]) => el("li", { class: "ro" },
+      el("span", { class: "mark " + (r.checks?.[k] ? "y" : "n"), text: r.checks?.[k] ? "✓" : "×", title: m(r.checks?.[k] ? "yes" : "no") }), el("span", { text: lang === "tr" ? tr : nl }))))),
+    el("section", { class: "blk" }, el("h2", { text: L("s_opm") }), el("p", { class: "val" + (r.opmerkingen ? "" : " empty"), style: "margin:0", text: r.opmerkingen || "–" })),
+    el("section", { class: "blk" }, el("h2", { text: L("s_foto") + " (" + (r.photoIds?.length || 0) + ")" }),
+      r.photoIds?.length ? el("div", { class: "photos" }, r.photoIds.map(id => el("div", { class: "ph" }, el("a", { href: blobUrl(id), target: "_blank", rel: "noopener" }, el("img", { src: blobUrl(id), alt: "", loading: "lazy" })))))
+        : el("p", { class: "note", text: m("d_none") })),
+    el("section", { class: "blk" }, el("h2", { text: L("s_akkoord") }), el("p", { class: "agree", text: AGREE[lang === "tr" ? 1 : 0] }),
+      el("div", { class: "grid" }, kv(m("d_by"), r.akkoord?.naam), kv(m("d_place"), r.akkoord?.plaats || r.klant?.plaats), kv(m("d_signed_on"), fmtDT(r.akkoord?.signedAt))),
+      r.signatureId ? el("img", { class: "sigimg", src: blobUrl(r.signatureId), alt: L("l_sig") }) : null),
+    el("div", { class: "actions" }, db ? del : null),
+    $("#v-form .company").cloneNode(true)); }
+
+/* ---------- boot ---------- */
+applyLang();
+(async () => { const use = n => window.claude?.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+  [db, assets, downloads] = await Promise.all([use("db"), use("assets"), use("downloads")]);
+  if (!db || !assets) { listState = "nocloud"; renderList(); if (!db) return; }
+  const slow = setTimeout(() => { if (listState === "loading") { listState = "slow"; renderList(); } }, 10000);
+  db.collection(COLL).orderBy("createdAt", "desc").limit(500).onSnapshot(snap => {
+    records = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (!snap.metadata.fromCache) clearTimeout(slow);
+    if (listState !== "nocloud") listState = "ready"; else if (assets) listState = "ready"; renderList();
+  }, () => { clearTimeout(slow); listState = "nocloud"; renderList(); });
+})();
+})();
+</script>
