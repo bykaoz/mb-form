@@ -157,7 +157,7 @@ section.blk{display:grid;gap:14px;min-width:0}
 <div id="v-list">
   <div class="listhead">
     <h1 data-t="list_title">Opgeleverde montages</h1>
-    <input id="q" class="search" type="search" data-tp="search_ph" placeholder="Zoek op naam, plaats of ordernummer">
+    <input id="q" class="search" type="search" data-tp="search_ph" placeholder="Zoek op naam of plaats">
   </div>
   <p id="cloud-note" class="note" hidden></p>
   <div id="list-empty" class="empty">
@@ -172,7 +172,7 @@ section.blk{display:grid;gap:14px;min-width:0}
 <form id="v-form" class="sheet" hidden novalidate>
   <div class="doc-head">
     <div><div class="eyebrow">MB Veranda</div><h1 data-t="doc_title">Opleverformulier montage</h1></div>
-    <p data-t="doc_sub">Invullen bij de klant, laten ondertekenen en opslaan.</p>
+    <p data-t="doc_sub">Naam en adres invullen, laten ondertekenen en opslaan.</p>
   </div>
 
   <section class="blk"><h2 data-t="s_klant">Klantgegevens</h2>
@@ -181,27 +181,7 @@ section.blk{display:grid;gap:14px;min-width:0}
       <div class="fld wide"><label for="f-straat" data-t="l_straat">Straat en huisnummer *</label><input id="f-straat" autocomplete="off" required></div>
       <div class="fld"><label for="f-postcode" data-t="l_postcode">Postcode *</label><input id="f-postcode" autocomplete="off" required></div>
       <div class="fld"><label for="f-plaats" data-t="l_plaats">Plaats *</label><input id="f-plaats" autocomplete="off" required></div>
-      <div class="fld"><label for="f-tel" data-t="l_tel">Telefoon</label><input id="f-tel" type="tel" inputmode="tel" autocomplete="off"></div>
-      <div class="fld"><label for="f-email" data-t="l_email">E-mail</label><input id="f-email" type="email" inputmode="email" autocomplete="off"></div>
     </div>
-  </section>
-
-  <section class="blk"><h2 data-t="s_montage">Montage</h2>
-    <div class="grid">
-      <div class="fld"><label for="f-order" data-t="l_order">Ordernummer</label><input id="f-order" autocomplete="off"></div>
-      <div class="fld"><label for="f-datum" data-t="l_datum">Montagedatum *</label><input id="f-datum" type="date" required></div>
-      <div class="fld wide"><label for="f-monteur" data-t="l_monteur">Monteur(s)</label><input id="f-monteur" autocomplete="off"></div>
-    </div>
-    <div class="chipgrp"><span class="lbl" data-t="l_product">Geplaatst product</span><div id="chips" class="chips"></div></div>
-    <div class="fld"><label for="f-overig" data-t="l_overig">Overig / uitvoering (maat, kleur, opties)</label><input id="f-overig" autocomplete="off"></div>
-  </section>
-
-  <section class="blk"><h2 data-t="s_check">Controle bij oplevering</h2>
-    <ul id="checks" class="checks"></ul>
-  </section>
-
-  <section class="blk"><h2 data-t="s_opm">Opmerkingen en restpunten</h2>
-    <div class="fld"><label for="f-opm" data-t="l_opm">Wat moet nog gebeuren of is afgesproken?</label><textarea id="f-opm"></textarea></div>
   </section>
 
   <section class="blk"><h2 data-t="s_foto">Foto's van de montage</h2>
@@ -215,11 +195,6 @@ section.blk{display:grid;gap:14px;min-width:0}
 
   <section class="blk"><h2 data-t="s_akkoord">Akkoord klant</h2>
     <p class="agree" id="agree-text"></p>
-    <div class="grid">
-      <div class="fld"><label for="f-akk-naam" data-t="l_akk_naam">Naam ondertekenaar *</label><input id="f-akk-naam" autocomplete="off"></div>
-      <div class="fld"><label for="f-akk-plaats" data-t="l_akk_plaats">Plaats</label><input id="f-akk-plaats" autocomplete="off"></div>
-    </div>
-    <label class="consent" for="f-akkoord"><input id="f-akkoord" type="checkbox"><span data-t="consent">Ik ga akkoord met de oplevering van de montage.</span></label>
     <div class="sigwrap">
       <div class="sigrow"><span class="lbl" data-t="l_sig">Handtekening klant *</span>
         <button type="button" class="btn small" id="sig-clear" data-t="sig_clear">Wissen</button></div>
@@ -254,26 +229,15 @@ section.blk{display:grid;gap:14px;min-width:0}
 /* ---------- constants ---------- */
 const COMPANY = { name:"MB Veranda B.V.", street:"Adriaan Mulderweg 4", city:"5657 EM Eindhoven", tel:"085 - 01 87 567",
   mail:"info@mbveranda.nl", web:"mbveranda.nl", kvk:"KvK 87719932", btw:"BTW NL864382832B01" };
-const PRODUCTS = ["MB Solid veranda","MB Bold veranda","MB Cube veranda","MB Cube Grand veranda","MB Prime lamellendak",
-  "MB Dynamic lamellendak","MB Advanced lamellendak","MB Adaptive pergola","MB Carport","MB Solid tuinkamer","MB Bold tuinkamer",
-  "MB Cube tuinkamer","MB Cube Grand tuinkamer","MB Schuifwand","MB Schuifpui","MB Vaste wand","MB Bovendakzonwering",
-  "MB Onderdakzonwering","MB Screens"];
-const CHECKS = [
-  ["c1","Het product is geplaatst volgens de bestelling.","Ürün siparişe uygun şekilde monte edildi."],
-  ["c2","Geen zichtbare schade aan product, glas of profielen.","Üründe, camda veya profillerde görünür hasar yok."],
-  ["c3","De werking is gedemonstreerd en uitgelegd.","Ürünün çalışması gösterildi ve anlatıldı."],
-  ["c4","Afwatering en afdichting zijn gecontroleerd.","Su tahliyesi ve sızdırmazlık kontrol edildi."],
-  ["c5","De werkplek is schoon en opgeruimd achtergelaten.","Çalışma alanı temiz ve düzenli bırakıldı."],
-  ["c6","Geen schade aan woning, bestrating of tuin.","Evde, zeminde veya bahçede hasar yok."]];
 const AGREE = [
-  "Ondergetekende verklaart dat de montage is uitgevoerd en opgeleverd, dat het werk samen met de monteur is gecontroleerd en dat hij/zij akkoord gaat met de oplevering. Eventuele opmerkingen en restpunten staan hierboven vermeld.",
-  "Aşağıda imzası bulunan kişi; montajın yapıldığını ve teslim edildiğini, işin montajcı ile birlikte kontrol edildiğini ve teslimatı onayladığını beyan eder. Varsa notlar ve eksik kalan işler yukarıda belirtilmiştir."];
+  "Ondergetekende verklaart dat de montage is uitgevoerd en opgeleverd, dat het werk samen met de monteur is gecontroleerd en dat hij/zij akkoord gaat met de oplevering.",
+  "Aşağıda imzası bulunan kişi; montajın yapıldığını ve teslim edildiğini, işin montajcı ile birlikte kontrol edildiğini ve teslimatı onayladığını beyan eder."];
 const COLL = "opleveringen";
 
 /* ---------- i18n: page is written in Dutch; Turkish overrides for the installer ---------- */
-const TR = { nav_list:"Formlar", nav_new:"Yeni form", list_title:"Teslim edilen montajlar", search_ph:"İsim, şehir veya sipariş no ile ara",
+const TR = { nav_list:"Formlar", nav_new:"Yeni form", list_title:"Teslim edilen montajlar", search_ph:"İsim veya şehir ile ara",
   empty_title:"Henüz kayıtlı form yok", empty_body:"İmzalanan teslim formları, PDF ve fotoğraflarıyla burada görünür ve bulutta saklanır.",
-  empty_btn:"İlk formu doldur", doc_title:"Montaj teslim formu", doc_sub:"Müşterinin yanında doldurun, imzalatın ve kaydedin.",
+  empty_btn:"İlk formu doldur", doc_title:"Montaj teslim formu", doc_sub:"İsim ve adresi girin, imzalatın ve kaydedin.",
   s_klant:"Müşteri bilgileri", l_naam:"Müşteri adı *", l_straat:"Sokak ve kapı no *", l_postcode:"Posta kodu *", l_plaats:"Şehir *",
   l_tel:"Telefon", l_email:"E-posta", s_montage:"Montaj", l_order:"Sipariş numarası", l_datum:"Montaj tarihi *", l_monteur:"Montajcı(lar)",
   l_product:"Monte edilen ürün", l_overig:"Diğer / detay (ölçü, renk, opsiyonlar)", s_check:"Teslim kontrolü", s_opm:"Notlar ve eksik işler",
@@ -315,14 +279,11 @@ function applyLang() {
   document.querySelectorAll("[data-tp]").forEach(e => { const k = e.dataset.tp; NL[k] ??= e.placeholder; e.placeholder = lang === "tr" ? (TR[k] || NL[k]) : NL[k]; });
   $("#lang").textContent = lang === "tr" ? "NL" : "TR";
   $("#agree-text").textContent = AGREE[lang === "tr" ? 1 : 0];
-  document.querySelectorAll("#checks span").forEach((s, i) => s.textContent = CHECKS[i][lang === "tr" ? 2 : 1]);
   renderList(); if (current) renderDetail(current);
 }
 $("#lang").addEventListener("click", () => { lang = lang === "tr" ? "nl" : "tr"; try { localStorage.setItem("mbv-lang", lang); } catch {} applyLang(); });
 
 /* ---------- static form parts ---------- */
-PRODUCTS.forEach((p, i) => $("#chips").append(el("label", { class: "chip" }, el("input", { type: "checkbox", name: "prod", value: p, id: "f-prod-" + i }), el("span", { text: p }))));
-CHECKS.forEach(([k, nl]) => $("#checks").append(el("li", {}, el("label", { for: "f-" + k }, el("input", { type: "checkbox", name: "chk", value: k, id: "f-" + k }), el("span", { text: nl })))));
 
 /* ---------- views ---------- */
 let current = null;
@@ -368,33 +329,20 @@ $("#f-fotos").addEventListener("change", async e => { for (const f of e.target.f
 
 /* ---------- form data + draft ---------- */
 const F = id => $("#f-" + id), V = id => F(id).value.trim();
-function collect() { return {
-  klant: { naam: V("naam"), straat: V("straat"), postcode: V("postcode"), plaats: V("plaats"), tel: V("tel"), email: V("email") },
-  project: { order: V("order"), datum: V("datum"), monteur: V("monteur"), overig: V("overig"),
-    producten: [...document.querySelectorAll("input[name=prod]:checked")].map(i => i.value) },
-  checks: Object.fromEntries([...document.querySelectorAll("input[name=chk]")].map(i => [i.value, i.checked])),
-  opmerkingen: V("opm"), akkoord: { naam: V("akk-naam"), plaats: V("akk-plaats") } }; }
-function fill(d) { if (!d) return; const s = (id, v) => { if (v != null) F(id).value = v; };
-  for (const k of ["naam", "straat", "postcode", "plaats", "tel", "email"]) s(k, d.klant?.[k]);
-  for (const k of ["order", "datum", "monteur", "overig"]) s(k, d.project?.[k]);
-  document.querySelectorAll("input[name=prod]").forEach(i => i.checked = !!d.project?.producten?.includes(i.value));
-  document.querySelectorAll("input[name=chk]").forEach(i => i.checked = !!d.checks?.[i.value]);
-  s("opm", d.opmerkingen); s("akk-naam", d.akkoord?.naam); s("akk-plaats", d.akkoord?.plaats); }
-const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+function collect() { return { klant: { naam: V("naam"), straat: V("straat"), postcode: V("postcode"), plaats: V("plaats") } }; }
+function fill(d) { if (!d) return; for (const k of ["naam", "straat", "postcode", "plaats"]) if (d.klant?.[k] != null) F(k).value = d.klant[k]; }
 let draftT; const form = $("#v-form");
 form.addEventListener("input", () => { clearTimeout(draftT); draftT = setTimeout(() => { try { localStorage.setItem("mbv-draft", JSON.stringify(collect())); } catch {} }, 500); });
-function resetForm() { form.reset(); F("datum").value = today(); strokes = []; sigResize(); formPhotos.forEach(p => URL.revokeObjectURL(p.url)); formPhotos = []; renderFormPhotos();
+function resetForm() { form.reset(); strokes = []; sigResize(); formPhotos.forEach(p => URL.revokeObjectURL(p.url)); formPhotos = []; renderFormPhotos();
   try { localStorage.removeItem("mbv-draft"); } catch {} status(""); }
 $("#clear-form").addEventListener("click", resetForm);
 try { fill(JSON.parse(localStorage.getItem("mbv-draft") || "null")); } catch {}
-if (!F("datum").value) F("datum").value = today();
 const status = (t, cls = "") => { const s = $("#save-status"); s.textContent = t; s.className = "status " + cls; };
 
 /* ---------- formatting ---------- */
 const loc = () => lang === "tr" ? "tr-TR" : "nl-NL";
 const fmtDate = (iso, l = loc()) => { if (!iso) return ""; const d = new Date(iso.length === 10 ? iso + "T12:00:00" : iso); return isNaN(d) ? iso : d.toLocaleDateString(l, { day: "numeric", month: "long", year: "numeric" }); };
 const fmtDT = (iso, l = loc()) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(l, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }); };
-const prodText = r => [...(r.project?.producten || []), r.project?.overig].filter(Boolean).join(", ");
 
 /* ---------- PDF: A4 pages drawn on canvas (any alphabet renders), wrapped into a pdf by jsPDF ---------- */
 let logoImg;
@@ -409,7 +357,7 @@ async function buildPdf(rec, sigSrc, photoSrcs) {
     g.fillStyle = "#fff"; g.fillRect(0, 0, PW, PH); g.fillStyle = "#111"; g.fillRect(0, 0, PW, 150); g.fillStyle = "#f5540d"; g.fillRect(0, 150, PW, 7);
     g.drawImage(logo, MX, 39, 268, 72);
     g.textAlign = "right"; g.fillStyle = "#fff"; g.font = "700 30px " + DISP; g.fillText("OPLEVERFORMULIER MONTAGE", PW - MX, 72);
-    g.fillStyle = "#b9b3ad"; g.font = "400 21px " + BODY; g.fillText([rec.project.order && "Order " + rec.project.order, fmtDate(rec.project.datum, "nl-NL")].filter(Boolean).join("  ·  "), PW - MX, 108);
+    g.fillStyle = "#b9b3ad"; g.font = "400 21px " + BODY; g.fillText(fmtDate(rec.akkoord.signedAt, "nl-NL"), PW - MX, 108);
     g.textAlign = "left"; g.fillStyle = "#111"; g.fillRect(MX, PH - 122, CW, 2);
     g.fillStyle = "#555"; g.font = "600 19px " + DISP; g.fillText(COMPANY.name, MX, PH - 88);
     g.font = "400 18px " + BODY; g.fillText([COMPANY.street, COMPANY.city, COMPANY.tel, COMPANY.mail, COMPANY.web].join("  ·  "), MX, PH - 60);
@@ -429,17 +377,8 @@ async function buildPdf(rec, sigSrc, photoSrcs) {
 
   page();
   section("Klantgegevens");
-  fields([["Naam", rec.klant.naam], ["Telefoon", rec.klant.tel], ["Adres", rec.klant.straat + "\n" + [rec.klant.postcode, rec.klant.plaats].filter(Boolean).join(" ")], ["E-mail", rec.klant.email]]);
-  section("Montage");
-  fields([["Ordernummer", rec.project.order], ["Montagedatum", fmtDate(rec.project.datum, "nl-NL")], ["Geplaatst product", prodText(rec)], ["Monteur(s)", rec.project.monteur]]);
-  section("Controle bij oplevering");
-  for (const [k, nl] of CHECKS) { g.font = "400 24px " + BODY; const lines = wrap(nl, CW - 150); ensure(lines.length * 32 + 14); const on = !!rec.checks[k];
-    g.lineWidth = 2; g.strokeStyle = "#111"; if (on) { g.fillStyle = "#111"; g.fillRect(MX, y - 22, 26, 26); g.strokeStyle = "#fff"; g.lineWidth = 3.5; g.beginPath(); g.moveTo(MX + 6, y - 9); g.lineTo(MX + 11, y - 3); g.lineTo(MX + 20, y - 16); g.stroke(); }
-    else g.strokeRect(MX + 1, y - 21, 24, 24);
-    g.fillStyle = "#111"; g.font = "400 24px " + BODY; lines.forEach((t, i) => g.fillText(t, MX + 44, y + i * 32));
-    g.textAlign = "right"; g.font = "600 22px " + BODY; g.fillStyle = on ? "#111" : "#b3261e"; g.fillText(on ? "Ja" : "Nee", PW - MX, y); g.textAlign = "left"; y += lines.length * 32 + 14; }
-  y += 10; section("Opmerkingen en restpunten"); para(rec.opmerkingen || "Geen opmerkingen."); y += 14;
-  section("Akkoord klant"); para(AGREE[0], 22, "#333"); y += 16; ensure(215);
+  fields([["Naam", rec.klant.naam], ["Adres", rec.klant.straat + "\n" + [rec.klant.postcode, rec.klant.plaats].filter(Boolean).join(" ")]]);
+  y += 10; section("Akkoord klant"); para(AGREE[0], 24, "#111"); y += 16; ensure(215);
   const top = y; g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY;
   [["ONDERTEKEND DOOR", rec.akkoord.naam], ["PLAATS", rec.akkoord.plaats || rec.klant.plaats], ["DATUM EN TIJD", fmtDT(rec.akkoord.signedAt, "nl-NL")]].forEach(([l, v], i) => {
     g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY; g.fillText(l, MX, top + 8 + i * 72); g.fillStyle = "#111"; g.font = "400 25px " + BODY; g.fillText(wrap(v || "–", 440)[0], MX, top + 42 + i * 72); });
@@ -466,9 +405,9 @@ async function upload(blob, type) { try { return (await assets.upload(blob, { ty
 const blobUrl = id => "/_blob/" + id;
 
 form.addEventListener("submit", async e => { e.preventDefault(); const rec = collect(), miss = [];
-  for (const [id, key] of [["naam", "l_naam"], ["straat", "l_straat"], ["postcode", "l_postcode"], ["plaats", "l_plaats"], ["datum", "l_datum"]]) if (!V(id)) miss.push((lang === "tr" ? TR[key] : NL[key]).replace(" *", ""));
-  if (!rec.akkoord.naam) { F("akk-naam").value = rec.akkoord.naam = rec.klant.naam; }
-  if (!F("akkoord").checked) miss.push(m("need_ok")); if (!strokes.length) miss.push(m("need_sig"));
+  for (const [id, key] of [["naam", "l_naam"], ["straat", "l_straat"], ["postcode", "l_postcode"], ["plaats", "l_plaats"]]) if (!V(id)) miss.push((lang === "tr" ? TR[key] : NL[key]).replace(" *", ""));
+  rec.akkoord = { naam: rec.klant.naam };
+  if (!strokes.length) miss.push(m("need_sig"));
   if (miss.length) return status(m("need") + miss.join(", "), "err");
   if (!db || !assets) return status(m("nocloud"), "err");
   const btn = $("#save"); btn.disabled = true;
@@ -486,12 +425,12 @@ form.addEventListener("submit", async e => { e.preventDefault(); const rec = col
 /* ---------- list ---------- */
 function renderList() { const q = $("#q").value.trim().toLowerCase(), rows = $("#rows"); rows.replaceChildren();
   const note = $("#cloud-note"); note.hidden = !(listState === "loading" || listState === "slow" || listState === "nocloud"); if (!note.hidden) note.textContent = m(listState);
-  const hit = records.filter(r => !q || [r.klant?.naam, r.klant?.plaats, r.klant?.postcode, r.project?.order, r.klant?.straat].join(" ").toLowerCase().includes(q));
+  const hit = records.filter(r => !q || [r.klant?.naam, r.klant?.plaats, r.klant?.postcode, r.klant?.straat].join(" ").toLowerCase().includes(q));
   $("#list-empty").hidden = records.length > 0 || listState === "loading";
   for (const r of hit) rows.append(el("li", {}, el("button", { type: "button", class: "row", onclick: () => { current = r; show("detail"); current = r; renderDetail(r); } },
     el("div", {}, el("b", { text: r.klant?.naam || "–" }), el("br"), el("small", { text: [r.klant?.straat, [r.klant?.postcode, r.klant?.plaats].filter(Boolean).join(" ")].filter(Boolean).join(", ") })),
     el("div", { class: "meta" }, el("span", { class: "pill", text: m("signed") }), el("br"),
-      el("span", { text: [fmtDate(r.project?.datum), r.project?.order && "#" + r.project.order, (r.photoIds?.length || 0) + " " + m("photos")].filter(Boolean).join(" · ") }))))); }
+      el("span", { text: [fmtDate(r.createdAt), (r.photoIds?.length || 0) + " " + m("photos")].filter(Boolean).join(" · ") }))))); }
 $("#q").addEventListener("input", renderList);
 
 /* ---------- detail ---------- */
@@ -509,7 +448,7 @@ function renderDetail(r, msg = "", cls = "") { const s = $("#detail-sheet"); con
     if (!armed) { armed = true; del.textContent = m("d_del2"); setTimeout(() => { armed = false; del.textContent = m("d_del"); }, 5000); return; }
     try { await db.collection(COLL).doc(r.id).delete(); for (const id of [r.pdfId, r.signatureId, ...(r.photoIds || [])]) if (id) assets?.delete(id).catch(() => {});
       records = records.filter(x => x.id !== r.id); show("list"); renderList(); } catch (err) { say(m("fail", { c: err?.code || "error" }), "err"); } } });
-  const fname = ("Oplevering_" + [r.project?.order, r.klant?.naam, r.project?.datum].filter(Boolean).join("_")).replace(/[^\p{L}\p{N}_-]+/gu, "-").slice(0, 90) + ".pdf";
+  const fname = ("Oplevering_" + [r.klant?.naam, (r.createdAt || "").slice(0, 10)].filter(Boolean).join("_")).replace(/[^\p{L}\p{N}_-]+/gu, "-").slice(0, 90) + ".pdf";
   const dl = r.pdfId ? (downloads ? el("button", { type: "button", class: "btn primary", text: m("d_pdf"), onclick: async () => { try { const b = await (await fetch(blobUrl(r.pdfId))).blob(); await downloads.save({ filename: fname, data: b }); say(m("dl_ok"), "ok"); }
         catch (err) { if (err?.code !== "declined") say(m("dl_fail"), "err"); } } })
       : el("a", { class: "btn primary", href: blobUrl(r.pdfId), target: "_blank", rel: "noopener", text: m("d_open") })) : el("span", { class: "note", text: m("nopdf_d") });
@@ -518,13 +457,8 @@ function renderDetail(r, msg = "", cls = "") { const s = $("#detail-sheet"); con
       el("p", {}, el("span", { class: "pill", text: m("signed") }), " ", fmtDT(r.akkoord?.signedAt || r.createdAt))),
     el("div", { class: "actions" }, dl, r.pdfId && downloads ? el("a", { class: "btn", href: blobUrl(r.pdfId), target: "_blank", rel: "noopener", text: m("d_open") }) : null,
       assets && db ? el("label", { class: "btn", for: "d-add-photos", text: m("d_add") }) : null, addIn), st,
-    el("section", { class: "blk" }, el("h2", { text: L("s_klant") }), el("div", { class: "grid" }, kv(L("l_naam"), r.klant?.naam), kv(L("l_tel"), r.klant?.tel),
-      kv(L("l_straat"), [r.klant?.straat, [r.klant?.postcode, r.klant?.plaats].filter(Boolean).join(" ")].filter(Boolean).join("\n")), kv(L("l_email"), r.klant?.email))),
-    el("section", { class: "blk" }, el("h2", { text: L("s_montage") }), el("div", { class: "grid" }, kv(L("l_order"), r.project?.order), kv(L("l_datum"), fmtDate(r.project?.datum)),
-      kv(L("l_product"), prodText(r)), kv(L("l_monteur"), r.project?.monteur))),
-    el("section", { class: "blk" }, el("h2", { text: L("s_check") }), el("ul", { class: "checks" }, CHECKS.map(([k, nl, tr]) => el("li", { class: "ro" },
-      el("span", { class: "mark " + (r.checks?.[k] ? "y" : "n"), text: r.checks?.[k] ? "✓" : "×", title: m(r.checks?.[k] ? "yes" : "no") }), el("span", { text: lang === "tr" ? tr : nl }))))),
-    el("section", { class: "blk" }, el("h2", { text: L("s_opm") }), el("p", { class: "val" + (r.opmerkingen ? "" : " empty"), style: "margin:0", text: r.opmerkingen || "–" })),
+    el("section", { class: "blk" }, el("h2", { text: L("s_klant") }), el("div", { class: "grid" }, kv(L("l_naam"), r.klant?.naam),
+      kv(L("l_straat"), [r.klant?.straat, [r.klant?.postcode, r.klant?.plaats].filter(Boolean).join(" ")].filter(Boolean).join("\n")))),
     el("section", { class: "blk" }, el("h2", { text: L("s_foto") + " (" + (r.photoIds?.length || 0) + ")" }),
       r.photoIds?.length ? el("div", { class: "photos" }, r.photoIds.map(id => el("div", { class: "ph" }, el("a", { href: blobUrl(id), target: "_blank", rel: "noopener" }, el("img", { src: blobUrl(id), alt: "", loading: "lazy" })))))
         : el("p", { class: "note", text: m("d_none") })),
