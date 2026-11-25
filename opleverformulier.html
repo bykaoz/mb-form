@@ -329,7 +329,7 @@ $("#f-fotos").addEventListener("change", async e => { for (const f of e.target.f
 
 /* ---------- form data + draft ---------- */
 const F = id => $("#f-" + id), V = id => F(id).value.trim();
-function collect() { return { klant: { naam: V("naam"), straat: V("straat"), postcode: V("postcode"), plaats: V("plaats") } }; }
+function collect() { return { klant: { naam: V("naam"), straat: V("straat"), postcode: V("postcode").toUpperCase().replace(/^(\d{4})\s*([A-Z]{2})$/, "$1 $2"), plaats: V("plaats") } }; }
 function fill(d) { if (!d) return; for (const k of ["naam", "straat", "postcode", "plaats"]) if (d.klant?.[k] != null) F(k).value = d.klant[k]; }
 let draftT; const form = $("#v-form");
 form.addEventListener("input", () => { clearTimeout(draftT); draftT = setTimeout(() => { try { localStorage.setItem("mbv-draft", JSON.stringify(collect())); } catch {} }, 500); });
@@ -348,51 +348,78 @@ const fmtDT = (iso, l = loc()) => { const d = new Date(iso); return isNaN(d) ? "
 let logoImg;
 async function getLogo() { if (logoImg) return logoImg; const svg = new XMLSerializer().serializeToString($("svg.logo"));
   const u = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" })); try { logoImg = await loadImg(u); } finally { URL.revokeObjectURL(u); } return logoImg; }
+const docNr = r => { if (r.nr) return r.nr; const d = new Date(r.akkoord?.signedAt || r.createdAt); if (isNaN(d)) return ""; const p = n => String(n).padStart(2, "0");
+  return "MBV-" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()); };
+const DECL = ["de montage is uitgevoerd en opgeleverd;", "het werk samen met de monteur is gecontroleerd;", "hij/zij akkoord gaat met de oplevering."];
 async function buildPdf(rec, sigSrc, photoSrcs) {
   if (!window.jspdf) throw { code: "pdf_lib" };
-  try { await Promise.all([document.fonts.load('700 30px Exo'), document.fonts.load('600 20px Exo'), document.fonts.load('400 24px Inter'), document.fonts.load('600 24px Inter')]); } catch {}
-  const PW = 1240, PH = 1754, MX = 90, CW = PW - 2 * MX, BOTTOM = PH - 130, DISP = 'Exo, Inter, Arial, sans-serif', BODY = 'Inter, Arial, sans-serif';
-  const logo = await getLogo(), pages = []; let g, y;
+  try { await Promise.all(['700 50px Exo', '600 20px Exo', '400 24px Inter', '500 24px Inter', '600 24px Inter'].map(f => document.fonts.load(f))); } catch {}
+  const PW = 1240, PH = 1754, MX = 90, CW = PW - 2 * MX, FY = PH - 128, BOTTOM = PH - 150, DISP = 'Exo, Inter, Arial, sans-serif', BODY = 'Inter, Arial, sans-serif';
+  const INK = "#141312", MUTED = "#6b655f", LINE = "#ddd8d2", SOFT = "#f6f4f1", OR = "#f5540d";
+  const logo = await getLogo(), pages = [], nr = docNr(rec), when = fmtDT(rec.akkoord.signedAt, "nl-NL"); let g, y;
+  const spaced = (px, fn) => { try { g.letterSpacing = px + "px"; } catch {} fn(); try { g.letterSpacing = "0px"; } catch {} };
+  const caps = (t, x, yy, size = 15, color = MUTED, sp = 1.5) => { g.font = "600 " + size + "px " + BODY; g.fillStyle = color; spaced(sp, () => g.fillText(t.toUpperCase(), x, yy)); };
   const page = () => { const c = document.createElement("canvas"); c.width = PW; c.height = PH; g = c.getContext("2d"); pages.push(c);
-    g.fillStyle = "#fff"; g.fillRect(0, 0, PW, PH); g.fillStyle = "#111"; g.fillRect(0, 0, PW, 150); g.fillStyle = "#f5540d"; g.fillRect(0, 150, PW, 7);
-    g.drawImage(logo, MX, 39, 268, 72);
-    g.textAlign = "right"; g.fillStyle = "#fff"; g.font = "700 30px " + DISP; g.fillText("OPLEVERFORMULIER MONTAGE", PW - MX, 72);
-    g.fillStyle = "#b9b3ad"; g.font = "400 21px " + BODY; g.fillText(fmtDate(rec.akkoord.signedAt, "nl-NL"), PW - MX, 108);
-    g.textAlign = "left"; g.fillStyle = "#111"; g.fillRect(MX, PH - 122, CW, 2);
-    g.fillStyle = "#555"; g.font = "600 19px " + DISP; g.fillText(COMPANY.name, MX, PH - 88);
-    g.font = "400 18px " + BODY; g.fillText([COMPANY.street, COMPANY.city, COMPANY.tel, COMPANY.mail, COMPANY.web].join("  ·  "), MX, PH - 60);
-    g.fillText(COMPANY.kvk + "  ·  " + COMPANY.btw, MX, PH - 34); y = 215; };
+    g.fillStyle = "#fff"; g.fillRect(0, 0, PW, PH); g.fillStyle = "#111"; g.fillRect(0, 0, PW, 170); g.fillStyle = OR; g.fillRect(0, 170, PW, 6);
+    g.drawImage(logo, MX, 45, 298, 80);
+    g.textAlign = "right"; g.fillStyle = "#fff"; g.font = "600 20px " + BODY; g.fillText(COMPANY.web, PW - MX, 72);
+    g.fillStyle = "#b9b3ad"; g.font = "400 19px " + BODY; g.fillText(COMPANY.tel, PW - MX, 102); g.fillText(COMPANY.mail, PW - MX, 130); g.textAlign = "left";
+    g.fillStyle = LINE; g.fillRect(MX, FY, CW, 2); g.fillStyle = OR; g.fillRect(MX, FY, 70, 2);
+    [[COMPANY.name, COMPANY.street, COMPANY.city], ["Contact", COMPANY.tel, COMPANY.mail], ["Bedrijfsgegevens", COMPANY.kvk, COMPANY.btw]].forEach((c, i) => { const x = MX + i * 330;
+      g.fillStyle = INK; g.font = "600 17px " + DISP; g.fillText(c[0], x, FY + 36); g.fillStyle = MUTED; g.font = "400 17px " + BODY; g.fillText(c[1], x, FY + 62); g.fillText(c[2], x, FY + 86); });
+    y = 262; };
   const ensure = h => { if (y + h > BOTTOM) page(); };
   const wrap = (text, maxW) => { const out = []; for (const para of String(text).split(/\r?\n/)) { let line = "";
       for (let w of para.split(/\s+/)) { while (g.measureText(w).width > maxW) { let n = w.length; while (n > 1 && g.measureText(w.slice(0, n)).width > maxW) n--; if (line) { out.push(line); line = ""; } out.push(w.slice(0, n)); w = w.slice(n); }
         const t = line ? line + " " + w : w; if (g.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
       out.push(line); } return out; };
-  const section = t => { ensure(120); y += 14; g.fillStyle = "#f5540d"; g.fillRect(MX, y - 15, 14, 14); g.fillStyle = "#111"; g.font = "700 21px " + DISP;
-    g.fillText(t.toUpperCase().split("").join(" "), MX + 26, y); y += 14; g.fillStyle = "#ddd8d2"; g.fillRect(MX, y, CW, 2); y += 38; };
-  const fields = list => { const colW = (CW - 40) / 2; for (let i = 0; i < list.length; i += 2) { const pair = list.slice(i, i + 2);
-      g.font = "400 25px " + BODY; const lines = pair.map(([, v]) => wrap(v || "–", colW)); const h = 30 + Math.max(...lines.map(l => l.length)) * 33 + 16; ensure(h);
-      pair.forEach(([l], j) => { const x = MX + j * (colW + 40); g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY; g.fillText(l.toUpperCase(), x, y);
-        g.fillStyle = "#111"; g.font = "400 25px " + BODY; lines[j].forEach((t, k) => g.fillText(t, x, y + 34 + k * 33)); }); y += h; } };
-  const para = (text, size = 24, color = "#111") => { g.font = "400 " + size + "px " + BODY; for (const l of wrap(text, CW)) { ensure(size + 12); g.fillStyle = color; g.font = "400 " + size + "px " + BODY; g.fillText(l, MX, y); y += size + 10; } };
+  const section = t => { ensure(140); g.fillStyle = OR; g.fillRect(MX, y - 15, 14, 14); g.fillStyle = INK; g.font = "700 22px " + DISP; spaced(2, () => g.fillText(t.toUpperCase(), MX + 28, y));
+    y += 16; g.fillStyle = LINE; g.fillRect(MX, y, CW, 2); y += 2; };
 
   page();
-  section("Klantgegevens");
-  fields([["Naam", rec.klant.naam], ["Adres", rec.klant.straat + "\n" + [rec.klant.postcode, rec.klant.plaats].filter(Boolean).join(" ")]]);
-  y += 10; section("Akkoord klant"); para(AGREE[0], 24, "#111"); y += 16; ensure(215);
-  const top = y; g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY;
-  [["ONDERTEKEND DOOR", rec.akkoord.naam], ["PLAATS", rec.akkoord.plaats || rec.klant.plaats], ["DATUM EN TIJD", fmtDT(rec.akkoord.signedAt, "nl-NL")]].forEach(([l, v], i) => {
-    g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY; g.fillText(l, MX, top + 8 + i * 72); g.fillStyle = "#111"; g.font = "400 25px " + BODY; g.fillText(wrap(v || "–", 440)[0], MX, top + 42 + i * 72); });
-  const bx = MX + 480, bw = CW - 480, bh = 220; g.strokeStyle = "#111"; g.lineWidth = 2; g.strokeRect(bx, top - 14, bw, bh);
-  if (sigSrc) { try { const s = await loadImg(sigSrc); const k = Math.min((bw - 30) / s.naturalWidth, (bh - 50) / s.naturalHeight); g.drawImage(s, bx + (bw - s.naturalWidth * k) / 2, top - 14 + (bh - 36 - s.naturalHeight * k) / 2, s.naturalWidth * k, s.naturalHeight * k); } catch {} }
-  g.fillStyle = "#6b655f"; g.font = "600 16px " + BODY; g.fillText("HANDTEKENING KLANT", bx + 16, top - 14 + bh - 14); y = top + bh + 20;
-
-  const cw = (CW - 30) / 2, ch = 420;
-  for (let i = 0; i < photoSrcs.length; i++) { if (i % 6 === 0) { page(); section("Foto's van de montage (" + photoSrcs.length + ")"); }
-    const j = i % 6, x = MX + (j % 2) * (cw + 30), yy = y + Math.floor(j / 2) * (ch + 30); g.fillStyle = "#f2f0ed"; g.fillRect(x, yy, cw, ch);
-    try { const im = await loadImg(photoSrcs[i]); const k = Math.min(cw / im.naturalWidth, ch / im.naturalHeight); g.drawImage(im, x + (cw - im.naturalWidth * k) / 2, yy + (ch - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k); } catch {} }
+  // title block
+  caps("Bewijs van oplevering", MX, y, 17, OR, 2.5); g.fillStyle = INK; g.font = "700 50px " + DISP; g.fillText("Opleverformulier montage", MX, y + 62);
+  g.textAlign = "right"; caps("Documentnummer", PW - MX, y + 24); g.fillStyle = INK; g.font = "600 25px " + BODY; g.fillText(nr, PW - MX, y + 60); g.textAlign = "left";
+  y += 92; g.fillStyle = INK; g.fillRect(MX, y, CW, 3); y += 40;
+  // parties
+  const cw2 = (CW - 30) / 2, addr = [rec.klant.postcode, rec.klant.plaats].filter(Boolean).join(" ");
+  const mk = (label, title, lines, accent) => { g.font = "600 29px " + DISP; const t = wrap(title || "–", cw2 - 56); g.font = "400 23px " + BODY; const l = lines.filter(Boolean).flatMap(s => wrap(s, cw2 - 56)); return { label, t, l, accent, h: 92 + t.length * 38 + l.length * 33 }; };
+  const cards = [mk("Klant", rec.klant.naam, [rec.klant.straat, addr], OR), mk("Opgeleverd door", COMPANY.name, [COMPANY.street, COMPANY.city, COMPANY.tel + "  ·  " + COMPANY.mail], INK)];
+  const h = Math.max(...cards.map(c => c.h));
+  cards.forEach((c, i) => { const x = MX + i * (cw2 + 30); g.fillStyle = SOFT; g.fillRect(x, y, cw2, h); g.fillStyle = c.accent; g.fillRect(x, y, cw2, 5); caps(c.label, x + 28, y + 50);
+    let yy = y + 94; g.fillStyle = INK; g.font = "600 29px " + DISP; for (const s of c.t) { g.fillText(s, x + 28, yy); yy += 38; }
+    g.fillStyle = "#3a3531"; g.font = "400 23px " + BODY; yy -= 2; for (const s of c.l) { g.fillText(s, x + 28, yy); yy += 33; } });
+  y += h + 56;
+  // details table
+  section("Gegevens oplevering"); const d = new Date(rec.akkoord.signedAt), n = photoSrcs.length;
+  for (const [l, v] of [["Datum oplevering", fmtDate(rec.akkoord.signedAt, "nl-NL")], ["Tijdstip", isNaN(d) ? "" : d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) + " uur"],
+      ["Plaats", rec.klant.plaats], ["Bijlagen", n ? n + (n === 1 ? " foto" : " foto's") + " van de montage (vanaf pagina 2)" : "Geen"]]) {
+    y += 40; g.fillStyle = MUTED; g.font = "400 23px " + BODY; g.fillText(l, MX, y); g.fillStyle = INK; g.font = "500 23px " + BODY; g.fillText(wrap(v || "–", CW - 340)[0], MX + 340, y);
+    y += 16; g.fillStyle = LINE; g.fillRect(MX, y, CW, 1); }
+  y += 56;
+  // declaration
+  section("Verklaring van oplevering"); y += 50; g.fillStyle = INK; g.font = "400 24px " + BODY; g.fillText("Ondergetekende verklaart dat:", MX, y); y += 14;
+  for (const s of DECL) { y += 42; g.fillStyle = OR; g.fillRect(MX, y - 22, 26, 26); g.strokeStyle = "#fff"; g.lineWidth = 3.5; g.lineCap = g.lineJoin = "round";
+    g.beginPath(); g.moveTo(MX + 6, y - 9); g.lineTo(MX + 11, y - 3); g.lineTo(MX + 20, y - 16); g.stroke();
+    g.fillStyle = INK; g.font = "400 24px " + BODY; const ls = wrap(s, CW - 50); ls.forEach((t, i) => g.fillText(t, MX + 46, y + i * 32)); y += (ls.length - 1) * 32; }
+  y += 56;
+  // signature
+  ensure(310); section("Ondertekening"); y += 30; const top = y, bw = 600, bh = 220;
+  g.strokeStyle = "#bdb7b0"; g.lineWidth = 2; g.strokeRect(MX + 1, top, bw, bh);
+  if (sigSrc) { try { const s = await loadImg(sigSrc); const k = Math.min((bw - 40) / s.naturalWidth, (bh - 62) / s.naturalHeight); g.drawImage(s, MX + (bw - s.naturalWidth * k) / 2, top + 6 + (bh - 62 - s.naturalHeight * k) / 2, s.naturalWidth * k, s.naturalHeight * k); } catch {} }
+  g.fillStyle = INK; g.fillRect(MX + 24, top + bh - 50, bw - 48, 1.5); caps("Handtekening klant", MX + 24, top + bh - 22, 14);
+  [["Naam", rec.akkoord.naam], ["Plaats", rec.akkoord.plaats || rec.klant.plaats], ["Datum en tijd", when]].forEach(([l, v], i) => { const x = MX + bw + 50;
+    caps(l, x, top + 20 + i * 74); g.fillStyle = INK; g.font = "500 25px " + BODY; g.fillText(wrap(v || "–", CW - bw - 50)[0], x, top + 54 + i * 74); });
+  y = top + bh + 38; g.fillStyle = MUTED; g.font = "400 18px " + BODY; g.fillText("Digitaal ondertekend op " + when + "  ·  Documentnummer " + nr, MX, y);
+  // photo pages
+  const ch = 405;
+  for (let i = 0; i < n; i++) { if (i % 6 === 0) { page(); section("Foto's van de montage (" + n + ")"); y += 30; }
+    const j = i % 6, x = MX + (j % 2) * (cw2 + 30), yy = y + Math.floor(j / 2) * (ch + 30); g.fillStyle = SOFT; g.fillRect(x, yy, cw2, ch);
+    try { const im = await loadImg(photoSrcs[i]); const k = Math.min(cw2 / im.naturalWidth, ch / im.naturalHeight); g.drawImage(im, x + (cw2 - im.naturalWidth * k) / 2, yy + (ch - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k); } catch {} }
   const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", compress: true });
-  pages.forEach((c, i) => { const x = c.getContext("2d"); x.textAlign = "right"; x.fillStyle = "#555"; x.font = "400 18px " + BODY; x.fillText("Pagina " + (i + 1) + " van " + pages.length, PW - MX, PH - 34);
-    if (i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg", 0.88), "JPEG", 0, 0, 210, 297, undefined, "FAST"); });
+  pages.forEach((c, i) => { const x = c.getContext("2d"); x.textAlign = "right"; x.fillStyle = INK; x.font = "600 17px " + DISP; x.fillText("Pagina " + (i + 1) + " van " + pages.length, PW - MX, FY + 36);
+    x.fillStyle = MUTED; x.font = "400 17px " + BODY; x.fillText(nr, PW - MX, FY + 62);
+    if (i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297, undefined, "FAST"); });
   return pdf.output("blob");
 }
 window.__mbvBuildPdf = buildPdf; // kept reachable for one-off checks
@@ -411,7 +438,7 @@ form.addEventListener("submit", async e => { e.preventDefault(); const rec = col
   if (miss.length) return status(m("need") + miss.join(", "), "err");
   if (!db || !assets) return status(m("nocloud"), "err");
   const btn = $("#save"); btn.disabled = true;
-  try { rec.akkoord.signedAt ??= new Date().toISOString(); rec.createdAt = rec.akkoord.signedAt;
+  try { rec.akkoord.signedAt ??= new Date().toISOString(); rec.createdAt = rec.akkoord.signedAt; rec.nr = docNr(rec);
     status(m("st_sig")); const sb = await sigBlob(); rec.signatureId = await upload(sb, "image/png");
     for (let i = 0; i < formPhotos.length; i++) { status(m("st_ph", { i: i + 1, n: formPhotos.length })); formPhotos[i].id ??= await upload(formPhotos[i].blob, "image/jpeg"); }
     rec.photoIds = formPhotos.map(p => p.id); rec.pdfId = null; let pdfOk = true;
