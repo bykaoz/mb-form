@@ -125,6 +125,13 @@ section.blk{display:grid;gap:14px;min-width:0}
 .empty{background:var(--paper);border:1px dashed var(--line);border-radius:var(--r);padding:34px 20px;text-align:center;color:var(--muted);display:grid;gap:14px;justify-items:center}
 .empty h2{color:var(--ink);font-size:19px}
 .back{margin-bottom:12px}
+.ph .phbtn{position:static;width:100%;height:100%;border-radius:0;background:none;padding:0;display:block;cursor:zoom-in}
+.viewer{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;overscroll-behavior:contain}
+.viewer-bar{position:sticky;top:0;z-index:1;display:flex;justify-content:flex-end;background:var(--band);border-bottom:4px solid var(--accent);
+  padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.viewer-body{display:grid;gap:16px;justify-items:center;padding-block:16px calc(32px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.viewer-body img{display:block;width:100%;max-width:900px;height:auto;background:#fff;border:1px solid var(--line)}
 @media (prefers-reduced-motion:no-preference){.btn,.row,.chip span{transition:border-color .15s,background-color .15s}}
 </style>
 
@@ -221,6 +228,10 @@ section.blk{display:grid;gap:14px;min-width:0}
   <div class="sheet" id="detail-sheet"></div>
 </div>
 </main>
+<div id="viewer" class="viewer" role="dialog" aria-modal="true" aria-label="Pdf" hidden>
+  <div class="viewer-bar"><button type="button" class="btn small" id="viewer-close" data-t="v_close">Sluiten ×</button></div>
+  <div id="viewer-body" class="viewer-body"></div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -245,7 +256,7 @@ const TR = { nav_list:"Formlar", nav_new:"Yeni form", list_title:"Teslim edilen 
   foto_hint:"Fotoğraf çekin veya galeriden seçin. Küçültülür ve bu formla birlikte saklanır.", foto_btn:"Fotoğraf ekle",
   s_akkoord:"Müşteri onayı", l_akk_naam:"İmzalayanın adı *", l_akk_plaats:"Yer", consent:"Montajın teslimini onaylıyorum.",
   l_sig:"Müşteri imzası *", sig_clear:"Temizle", sig_hint:"Parmak veya kalemle buraya imzalayın", save:"İmzalı formu kaydet",
-  reset:"Formu temizle", c_contact:"İletişim", c_bedrijf:"Şirket bilgileri", back:"← Tüm formlar" };
+  reset:"Formu temizle", v_close:"Kapat ×", c_contact:"İletişim", c_bedrijf:"Şirket bilgileri", back:"← Tüm formlar" };
 const M = { // dynamic strings [nl, tr]
   loading:["Formulieren laden…","Formlar yükleniyor…"],
   slow:["De cloud reageert nog niet. Controleer de verbinding; de lijst verschijnt zodra er contact is.","Bulut henüz yanıt vermiyor. Bağlantıyı kontrol edin; liste bağlantı kurulunca görünür."],
@@ -256,10 +267,10 @@ const M = { // dynamic strings [nl, tr]
   saved:["Opgeslagen in de cloud.","Buluta kaydedildi."],
   fail:["Opslaan is niet gelukt ({c}). Uw invoer staat er nog; probeer het opnieuw.","Kaydedilemedi ({c}). Girdiğiniz bilgiler duruyor; tekrar deneyin."],
   nopdf:["Opgeslagen, maar de pdf kon niet worden gemaakt.","Kaydedildi, ancak PDF oluşturulamadı."],
-  signed:["Ondertekend","İmzalandı"], photos:["foto's","fotoğraf"], d_pdf:["Pdf downloaden","PDF indir"], d_open:["Pdf openen","PDF aç"],
+  signed:["Ondertekend","İmzalandı"], photos:["foto's","fotoğraf"], d_pdf:["Pdf downloaden","PDF indir"], d_open:["Pdf bekijken","PDF'i görüntüle"], d_zoom:["Foto vergroten","Fotoğrafı büyüt"],
   d_add:["Foto's toevoegen","Fotoğraf ekle"], d_del:["Formulier verwijderen","Formu sil"], d_del2:["Zeker weten? Tik nogmaals om definitief te verwijderen","Emin misiniz? Kalıcı olarak silmek için tekrar dokunun"],
   d_none:["Geen foto's toegevoegd.","Fotoğraf eklenmedi."], d_signed_on:["Ondertekend op","İmza tarihi"], d_by:["Ondertekend door","İmzalayan"],
-  d_place:["Plaats","Yer"], yes:["Ja","Evet"], no:["Nee","Hayır"], dl_fail:["Downloaden is niet gelukt.","İndirilemedi."],
+  d_place:["Plaats","Yer"], yes:["Ja","Evet"], no:["Nee","Hayır"], dl_fail:["De pdf kon niet worden geladen. Probeer het opnieuw.","PDF yüklenemedi. Tekrar deneyin."],
   dl_ok:["Pdf opgeslagen.","PDF kaydedildi."], deleted:["Formulier verwijderd.","Form silindi."], updating:["Foto's toevoegen en pdf bijwerken…","Fotoğraflar ekleniyor, PDF güncelleniyor…"],
   updated:["Foto's toegevoegd.","Fotoğraflar eklendi."], nopdf_d:["Voor dit formulier is geen pdf opgeslagen.","Bu form için kayıtlı PDF yok."],
   remove:["Foto verwijderen","Fotoğrafı kaldır"] };
@@ -351,8 +362,7 @@ async function getLogo() { if (logoImg) return logoImg; const svg = new XMLSeria
 const docNr = r => { if (r.nr) return r.nr; const d = new Date(r.akkoord?.signedAt || r.createdAt); if (isNaN(d)) return ""; const p = n => String(n).padStart(2, "0");
   return "MBV-" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()); };
 const DECL = ["de montage is uitgevoerd en opgeleverd;", "het werk samen met de monteur is gecontroleerd;", "hij/zij akkoord gaat met de oplevering."];
-async function buildPdf(rec, sigSrc, photoSrcs) {
-  if (!window.jspdf) throw { code: "pdf_lib" };
+async function buildPages(rec, sigSrc, photoSrcs) {
   try { await Promise.all(['700 50px Exo', '600 20px Exo', '400 24px Inter', '500 24px Inter', '600 24px Inter'].map(f => document.fonts.load(f))); } catch {}
   const PW = 1240, PH = 1754, MX = 90, CW = PW - 2 * MX, FY = PH - 128, BOTTOM = PH - 150, DISP = 'Exo, Inter, Arial, sans-serif', BODY = 'Inter, Arial, sans-serif';
   const INK = "#141312", MUTED = "#6b655f", LINE = "#ddd8d2", SOFT = "#f6f4f1", OR = "#f5540d";
@@ -416,12 +426,22 @@ async function buildPdf(rec, sigSrc, photoSrcs) {
   for (let i = 0; i < n; i++) { if (i % 6 === 0) { page(); section("Foto's van de montage (" + n + ")"); y += 30; }
     const j = i % 6, x = MX + (j % 2) * (cw2 + 30), yy = y + Math.floor(j / 2) * (ch + 30); g.fillStyle = SOFT; g.fillRect(x, yy, cw2, ch);
     try { const im = await loadImg(photoSrcs[i]); const k = Math.min(cw2 / im.naturalWidth, ch / im.naturalHeight); g.drawImage(im, x + (cw2 - im.naturalWidth * k) / 2, yy + (ch - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k); } catch {} }
-  const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", compress: true });
   pages.forEach((c, i) => { const x = c.getContext("2d"); x.textAlign = "right"; x.fillStyle = INK; x.font = "600 17px " + DISP; x.fillText("Pagina " + (i + 1) + " van " + pages.length, PW - MX, FY + 36);
-    x.fillStyle = MUTED; x.font = "400 17px " + BODY; x.fillText(nr, PW - MX, FY + 62);
-    if (i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297, undefined, "FAST"); });
+    x.fillStyle = MUTED; x.font = "400 17px " + BODY; x.fillText(nr, PW - MX, FY + 62); });
+  return pages;
+}
+async function buildPdf(rec, sigSrc, photoSrcs) {
+  if (!window.jspdf) throw { code: "pdf_lib" };
+  const pages = await buildPages(rec, sigSrc, photoSrcs), pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", compress: true });
+  pages.forEach((c, i) => { if (i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297, undefined, "FAST"); });
   return pdf.output("blob");
 }
+/* in-page viewer: links to stored files cannot be opened from inside the page frame, so pages and photos are shown here */
+function openViewer(srcs, start = 0) { const box = $("#viewer-body"); box.replaceChildren(...srcs.map(u => el("img", { src: u, alt: "" })));
+  $("#viewer").hidden = false; document.body.style.overflow = "hidden"; $("#viewer").scrollTop = 0; if (start) requestAnimationFrame(() => box.children[start]?.scrollIntoView()); $("#viewer-close").focus(); }
+function closeViewer() { $("#viewer").hidden = true; document.body.style.overflow = ""; $("#viewer-body").replaceChildren(); }
+$("#viewer-close").addEventListener("click", closeViewer);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#viewer").hidden) closeViewer(); });
 window.__mbvBuildPdf = buildPdf; // kept reachable for one-off checks
 
 /* ---------- cloud ---------- */
@@ -476,18 +496,23 @@ function renderDetail(r, msg = "", cls = "") { const s = $("#detail-sheet"); con
     try { await db.collection(COLL).doc(r.id).delete(); for (const id of [r.pdfId, r.signatureId, ...(r.photoIds || [])]) if (id) assets?.delete(id).catch(() => {});
       records = records.filter(x => x.id !== r.id); show("list"); renderList(); } catch (err) { say(m("fail", { c: err?.code || "error" }), "err"); } } });
   const fname = ("Oplevering_" + [r.klant?.naam, (r.createdAt || "").slice(0, 10)].filter(Boolean).join("_")).replace(/[^\p{L}\p{N}_-]+/gu, "-").slice(0, 90) + ".pdf";
-  const dl = r.pdfId ? (downloads ? el("button", { type: "button", class: "btn primary", text: m("d_pdf"), onclick: async () => { try { const b = await (await fetch(blobUrl(r.pdfId))).blob(); await downloads.save({ filename: fname, data: b }); say(m("dl_ok"), "ok"); }
-        catch (err) { if (err?.code !== "declined") say(m("dl_fail"), "err"); } } })
-      : el("a", { class: "btn primary", href: blobUrl(r.pdfId), target: "_blank", rel: "noopener", text: m("d_open") })) : el("span", { class: "note", text: m("nopdf_d") });
+  const srcs = () => [r.signatureId && blobUrl(r.signatureId), (r.photoIds || []).map(blobUrl)];
+  const dl = downloads ? el("button", { type: "button", class: "btn", text: m("d_pdf"), onclick: async () => { say(m("st_pdf")); try { let b = null;
+        if (r.pdfId) { try { const res = await fetch(blobUrl(r.pdfId)); if (res.ok) b = await res.blob(); } catch {} }
+        if (!b || !b.size) b = await buildPdf(r, ...srcs());
+        await downloads.save({ filename: fname, data: b }); say(m("dl_ok"), "ok"); }
+      catch (err) { console.error(err); say(err?.code === "declined" ? "" : m("dl_fail"), "err"); } } }) : null;
+  const view = el("button", { type: "button", class: "btn primary", text: m("d_open"), onclick: async () => { say(m("st_pdf"));
+    try { const pages = await buildPages(r, ...srcs()); openViewer(pages.map(c => c.toDataURL("image/jpeg", 0.9))); say(""); } catch (err) { console.error(err); say(m("dl_fail"), "err"); } } });
   s.replaceChildren(
     el("div", { class: "doc-head" }, el("div", {}, el("div", { class: "eyebrow", text: "MB Veranda" }), el("h1", { text: L("doc_title") })),
       el("p", {}, el("span", { class: "pill", text: m("signed") }), " ", fmtDT(r.akkoord?.signedAt || r.createdAt))),
-    el("div", { class: "actions" }, dl, r.pdfId && downloads ? el("a", { class: "btn", href: blobUrl(r.pdfId), target: "_blank", rel: "noopener", text: m("d_open") }) : null,
+    el("div", { class: "actions" }, view, dl,
       assets && db ? el("label", { class: "btn", for: "d-add-photos", text: m("d_add") }) : null, addIn), st,
     el("section", { class: "blk" }, el("h2", { text: L("s_klant") }), el("div", { class: "grid" }, kv(L("l_naam"), r.klant?.naam),
       kv(L("l_straat"), [r.klant?.straat, [r.klant?.postcode, r.klant?.plaats].filter(Boolean).join(" ")].filter(Boolean).join("\n")))),
     el("section", { class: "blk" }, el("h2", { text: L("s_foto") + " (" + (r.photoIds?.length || 0) + ")" }),
-      r.photoIds?.length ? el("div", { class: "photos" }, r.photoIds.map(id => el("div", { class: "ph" }, el("a", { href: blobUrl(id), target: "_blank", rel: "noopener" }, el("img", { src: blobUrl(id), alt: "", loading: "lazy" })))))
+      r.photoIds?.length ? el("div", { class: "photos" }, r.photoIds.map((id, i) => el("div", { class: "ph" }, el("button", { type: "button", class: "phbtn", "aria-label": m("d_zoom"), onclick: () => openViewer(r.photoIds.map(blobUrl), i) }, el("img", { src: blobUrl(id), alt: "", loading: "lazy" })))))
         : el("p", { class: "note", text: m("d_none") })),
     el("section", { class: "blk" }, el("h2", { text: L("s_akkoord") }), el("p", { class: "agree", text: AGREE[lang === "tr" ? 1 : 0] }),
       el("div", { class: "grid" }, kv(m("d_by"), r.akkoord?.naam), kv(m("d_place"), r.akkoord?.plaats || r.klant?.plaats), kv(m("d_signed_on"), fmtDT(r.akkoord?.signedAt))),
