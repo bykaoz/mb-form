@@ -268,7 +268,10 @@ const M = { // dynamic strings [nl, tr]
   fail:["Opslaan is niet gelukt ({c}). Uw invoer staat er nog; probeer het opnieuw.","Kaydedilemedi ({c}). Girdiğiniz bilgiler duruyor; tekrar deneyin."],
   nopdf:["Opgeslagen, maar de pdf kon niet worden gemaakt.","Kaydedildi, ancak PDF oluşturulamadı."],
   signed:["Ondertekend","İmzalandı"], photos:["foto's","fotoğraf"], d_pdf:["Pdf downloaden","PDF indir"], d_open:["Pdf bekijken","PDF'i görüntüle"], d_zoom:["Foto vergroten","Fotoğrafı büyüt"],
-  d_add:["Foto's toevoegen","Fotoğraf ekle"], d_del:["Formulier verwijderen","Formu sil"], d_del2:["Zeker weten? Tik nogmaals om definitief te verwijderen","Emin misiniz? Kalıcı olarak silmek için tekrar dokunun"],
+  d_add:["Foto's toevoegen","Fotoğraf ekle"], e_edit:["Gegevens bewerken","Bilgileri düzenle"], e_save:["Wijzigingen opslaan","Değişiklikleri kaydet"], e_cancel:["Annuleren","Vazgeç"],
+  e_need:["Vul naam en volledig adres in.","İsim ve adresin tamamını doldurun."], e_saving:["Wijzigingen opslaan en pdf bijwerken…","Değişiklikler kaydediliyor, PDF güncelleniyor…"],
+  e_saved:["Wijzigingen opgeslagen.","Değişiklikler kaydedildi."], e_edited:["Laatst gewijzigd","Son düzenleme"],
+  d_del:["Formulier verwijderen","Formu sil"], d_del2:["Zeker weten? Tik nogmaals om definitief te verwijderen","Emin misiniz? Kalıcı olarak silmek için tekrar dokunun"],
   d_none:["Geen foto's toegevoegd.","Fotoğraf eklenmedi."], d_signed_on:["Ondertekend op","İmza tarihi"], d_by:["Ondertekend door","İmzalayan"],
   d_place:["Plaats","Yer"], yes:["Ja","Evet"], no:["Nee","Hayır"], dl_fail:["De pdf kon niet worden geladen. Probeer het opnieuw.","PDF yüklenemedi. Tekrar deneyin."],
   dl_ok:["Pdf opgeslagen.","PDF kaydedildi."], deleted:["Formulier verwijderd.","Form silindi."], updating:["Foto's toevoegen en pdf bijwerken…","Fotoğraflar ekleniyor, PDF güncelleniyor…"],
@@ -297,11 +300,12 @@ $("#lang").addEventListener("click", () => { lang = lang === "tr" ? "nl" : "tr";
 /* ---------- static form parts ---------- */
 
 /* ---------- views ---------- */
-let current = null;
+let current = null, editId = null;
+const normPc = v => v.toUpperCase().replace(/^(\d{4})\s*([A-Z]{2})$/, "$1 $2");
 function show(v) { for (const n of ["list", "form", "detail"]) $("#v-" + n).hidden = n !== v;
   $("#nav-list").toggleAttribute("aria-current", v !== "form"); $("#nav-new").toggleAttribute("aria-current", v === "form");
   if (v !== "form") $("#nav-list").setAttribute("aria-current", "page"); else $("#nav-new").setAttribute("aria-current", "page");
-  if (v === "form") requestAnimationFrame(sigResize); if (v !== "detail") current = null; window.scrollTo(0, 0); }
+  if (v === "form") requestAnimationFrame(sigResize); if (v !== "detail") { current = null; editId = null; } window.scrollTo(0, 0); }
 $("#nav-list").addEventListener("click", () => show("list"));
 $("#nav-new").addEventListener("click", () => show("form"));
 $("#empty-new").addEventListener("click", () => show("form"));
@@ -420,7 +424,7 @@ async function buildPages(rec, sigSrc, photoSrcs) {
   g.fillStyle = INK; g.fillRect(MX + 24, top + bh - 50, bw - 48, 1.5); caps("Handtekening klant", MX + 24, top + bh - 22, 14);
   [["Naam", rec.akkoord.naam], ["Plaats", rec.akkoord.plaats || rec.klant.plaats], ["Datum en tijd", when]].forEach(([l, v], i) => { const x = MX + bw + 50;
     caps(l, x, top + 20 + i * 74); g.fillStyle = INK; g.font = "500 25px " + BODY; g.fillText(wrap(v || "–", CW - bw - 50)[0], x, top + 54 + i * 74); });
-  y = top + bh + 38; g.fillStyle = MUTED; g.font = "400 18px " + BODY; g.fillText("Digitaal ondertekend op " + when + "  ·  Documentnummer " + nr, MX, y);
+  y = top + bh + 38; g.fillStyle = MUTED; g.font = "400 18px " + BODY; g.fillText("Digitaal ondertekend op " + when + "  ·  Documentnummer " + nr + (rec.editedAt ? "  ·  Klantgegevens gewijzigd op " + fmtDT(rec.editedAt, "nl-NL") : ""), MX, y);
   // photo pages
   const ch = 405;
   for (let i = 0; i < n; i++) { if (i % 6 === 0) { page(); section("Foto's van de montage (" + n + ")"); y += 30; }
@@ -491,6 +495,14 @@ function renderDetail(r, msg = "", cls = "") { const s = $("#detail-sheet"); con
       try { const pdf = await buildPdf(r, r.signatureId && blobUrl(r.signatureId), ids.map(blobUrl)); const pid = await upload(pdf, "application/pdf");
         await db.collection(COLL).doc(r.id).update({ pdfId: pid }); r = { ...r, pdfId: pid }; if (old) assets.delete(old).catch(() => {}); } catch (err) { console.error(err); }
       current = r; renderDetail(r, m("updated"), "ok"); } catch (err) { console.error(err); say(m("fail", { c: err?.code || "error" }), "err"); } });
+  const editing = editId === r.id, efld = (k, lk, wide) => el("div", { class: "fld" + (wide ? " wide" : "") }, el("label", { for: "e-" + k, text: L(lk) + " *" }), el("input", { id: "e-" + k, value: r.klant?.[k] || "", autocomplete: "off" }));
+  const saveEdit = async () => { const gv = k => $("#e-" + k).value.trim(), klant = { naam: gv("naam"), straat: gv("straat"), postcode: normPc(gv("postcode")), plaats: gv("plaats") };
+    if (Object.values(klant).some(v => !v)) return say(m("e_need"), "err"); say(m("e_saving"));
+    try { const editedAt = new Date().toISOString(); await db.collection(COLL).doc(r.id).update({ klant, akkoord: { naam: klant.naam }, editedAt });
+      r = { ...r, klant, akkoord: { ...r.akkoord, naam: klant.naam }, editedAt }; const old = r.pdfId;
+      if (assets) { try { const pdf = await buildPdf(r, ...srcs()); const pid = await upload(pdf, "application/pdf"); await db.collection(COLL).doc(r.id).update({ pdfId: pid }); r = { ...r, pdfId: pid }; if (old) assets.delete(old).catch(() => {}); } catch (err) { console.error(err); } }
+      editId = null; current = r; renderDetail(r, m("e_saved"), "ok"); } catch (err) { console.error(err); say(m("fail", { c: err?.code || "error" }), "err"); } };
+  const editBtn = () => db && !editing ? el("button", { type: "button", class: "btn", text: m("e_edit"), onclick: () => { editId = r.id; renderDetail(r); $("#e-naam").focus(); } }) : null;
   let armed = false; const del = el("button", { type: "button", class: "btn danger", text: m("d_del"), onclick: async () => {
     if (!armed) { armed = true; del.textContent = m("d_del2"); setTimeout(() => { armed = false; del.textContent = m("d_del"); }, 5000); return; }
     try { await db.collection(COLL).doc(r.id).delete(); for (const id of [r.pdfId, r.signatureId, ...(r.photoIds || [])]) if (id) assets?.delete(id).catch(() => {});
@@ -507,17 +519,19 @@ function renderDetail(r, msg = "", cls = "") { const s = $("#detail-sheet"); con
   s.replaceChildren(
     el("div", { class: "doc-head" }, el("div", {}, el("div", { class: "eyebrow", text: "MB Veranda" }), el("h1", { text: L("doc_title") })),
       el("p", {}, el("span", { class: "pill", text: m("signed") }), " ", fmtDT(r.akkoord?.signedAt || r.createdAt))),
-    el("div", { class: "actions" }, view, dl,
+    el("div", { class: "actions" }, view, dl, editBtn(),
       assets && db ? el("label", { class: "btn", for: "d-add-photos", text: m("d_add") }) : null, addIn), st,
-    el("section", { class: "blk" }, el("h2", { text: L("s_klant") }), el("div", { class: "grid" }, kv(L("l_naam"), r.klant?.naam),
+    editing ? el("section", { class: "blk" }, el("h2", { text: L("s_klant") }), el("div", { class: "grid" }, efld("naam", "l_naam", true), efld("straat", "l_straat", true), efld("postcode", "l_postcode"), efld("plaats", "l_plaats")),
+        el("div", { class: "actions" }, el("button", { type: "button", class: "btn primary", text: m("e_save"), onclick: saveEdit }), el("button", { type: "button", class: "btn", text: m("e_cancel"), onclick: () => { editId = null; renderDetail(r); } })))
+      : el("section", { class: "blk" }, el("h2", { text: L("s_klant") }), el("div", { class: "grid" }, kv(L("l_naam"), r.klant?.naam),
       kv(L("l_straat"), [r.klant?.straat, [r.klant?.postcode, r.klant?.plaats].filter(Boolean).join(" ")].filter(Boolean).join("\n")))),
     el("section", { class: "blk" }, el("h2", { text: L("s_foto") + " (" + (r.photoIds?.length || 0) + ")" }),
       r.photoIds?.length ? el("div", { class: "photos" }, r.photoIds.map((id, i) => el("div", { class: "ph" }, el("button", { type: "button", class: "phbtn", "aria-label": m("d_zoom"), onclick: () => openViewer(r.photoIds.map(blobUrl), i) }, el("img", { src: blobUrl(id), alt: "", loading: "lazy" })))))
         : el("p", { class: "note", text: m("d_none") })),
     el("section", { class: "blk" }, el("h2", { text: L("s_akkoord") }), el("p", { class: "agree", text: AGREE[lang === "tr" ? 1 : 0] }),
-      el("div", { class: "grid" }, kv(m("d_by"), r.akkoord?.naam), kv(m("d_place"), r.akkoord?.plaats || r.klant?.plaats), kv(m("d_signed_on"), fmtDT(r.akkoord?.signedAt))),
+      el("div", { class: "grid" }, kv(m("d_by"), r.akkoord?.naam), kv(m("d_place"), r.akkoord?.plaats || r.klant?.plaats), kv(m("d_signed_on"), fmtDT(r.akkoord?.signedAt)), r.editedAt ? kv(m("e_edited"), fmtDT(r.editedAt)) : null),
       r.signatureId ? el("img", { class: "sigimg", src: blobUrl(r.signatureId), alt: L("l_sig") }) : null),
-    el("div", { class: "actions" }, db ? del : null),
+    el("div", { class: "actions" }, editBtn(), db ? del : null),
     $("#v-form .company").cloneNode(true)); }
 
 /* ---------- boot ---------- */
