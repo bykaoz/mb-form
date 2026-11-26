@@ -183,6 +183,12 @@ section.blk{display:grid;gap:14px;min-width:0}
   </div>
 
   <section class="blk"><h2 data-t="s_klant">Klantgegevens</h2>
+    <div class="drop" id="scan-box" hidden>
+      <p data-t="scan_hint">Maak een foto van de orderbevestiging, pakbon of het adreslabel. Naam en adres worden automatisch ingevuld.</p>
+      <label class="btn" for="f-scan"><span data-t="scan_btn">Gegevens uit foto halen</span></label>
+      <input id="f-scan" type="file" accept="image/*" hidden>
+    </div>
+    <p id="scan-status" class="status" role="status" aria-live="polite" hidden></p>
     <div class="grid">
       <div class="fld wide"><label for="f-naam" data-t="l_naam">Naam klant *</label><input id="f-naam" autocomplete="off" required></div>
       <div class="fld wide"><label for="f-straat" data-t="l_straat">Straat en huisnummer *</label><input id="f-straat" autocomplete="off" required></div>
@@ -256,7 +262,7 @@ const TR = { nav_list:"Formlar", nav_new:"Yeni form", list_title:"Teslim edilen 
   foto_hint:"Fotoğraf çekin veya galeriden seçin. Küçültülür ve bu formla birlikte saklanır.", foto_btn:"Fotoğraf ekle",
   s_akkoord:"Müşteri onayı", l_akk_naam:"İmzalayanın adı *", l_akk_plaats:"Yer", consent:"Montajın teslimini onaylıyorum.",
   l_sig:"Müşteri imzası *", sig_clear:"Temizle", sig_hint:"Parmak veya kalemle buraya imzalayın", save:"İmzalı formu kaydet",
-  reset:"Formu temizle", v_close:"Kapat ×", c_contact:"İletişim", c_bedrijf:"Şirket bilgileri", back:"← Tüm formlar" };
+  reset:"Formu temizle", scan_hint:"Sipariş onayının, irsaliyenin veya adres etiketinin fotoğrafını çekin. İsim ve adres otomatik doldurulur.", scan_btn:"Bilgileri fotoğraftan al", v_close:"Kapat ×", c_contact:"İletişim", c_bedrijf:"Şirket bilgileri", back:"← Tüm formlar" };
 const M = { // dynamic strings [nl, tr]
   loading:["Formulieren laden…","Formlar yükleniyor…"],
   slow:["De cloud reageert nog niet. Controleer de verbinding; de lijst verschijnt zodra er contact is.","Bulut henüz yanıt vermiyor. Bağlantıyı kontrol edin; liste bağlantı kurulunca görünür."],
@@ -271,6 +277,10 @@ const M = { // dynamic strings [nl, tr]
   d_add:["Foto's toevoegen","Fotoğraf ekle"], e_edit:["Gegevens bewerken","Bilgileri düzenle"], e_save:["Wijzigingen opslaan","Değişiklikleri kaydet"], e_cancel:["Annuleren","Vazgeç"],
   e_need:["Vul naam en volledig adres in.","İsim ve adresin tamamını doldurun."], e_saving:["Wijzigingen opslaan en pdf bijwerken…","Değişiklikler kaydediliyor, PDF güncelleniyor…"],
   e_saved:["Wijzigingen opgeslagen.","Değişiklikler kaydedildi."], e_edited:["Laatst gewijzigd","Son düzenleme"],
+  sc_busy:["Foto lezen…","Fotoğraf okunuyor…"], sc_ok:["Ingevuld uit de foto. Controleer de gegevens.","Fotoğraftan dolduruldu. Bilgileri kontrol edin."],
+  sc_none:["Geen naam of adres gevonden op de foto. Probeer een scherpere foto of vul de gegevens zelf in.","Fotoğrafta isim veya adres bulunamadı. Daha net bir fotoğraf deneyin ya da bilgileri elle girin."],
+  sc_wait:["Te veel aanvragen achter elkaar. Wacht even en probeer het opnieuw.","Art arda çok fazla istek. Biraz bekleyip tekrar deneyin."],
+  sc_fail:["De foto kon niet worden gelezen. Vul de gegevens zelf in of probeer het opnieuw.","Fotoğraf okunamadı. Bilgileri elle girin ya da tekrar deneyin."],
   d_del:["Formulier verwijderen","Formu sil"], d_del2:["Zeker weten? Tik nogmaals om definitief te verwijderen","Emin misiniz? Kalıcı olarak silmek için tekrar dokunun"],
   d_none:["Geen foto's toegevoegd.","Fotoğraf eklenmedi."], d_signed_on:["Ondertekend op","İmza tarihi"], d_by:["Ondertekend door","İmzalayan"],
   d_place:["Plaats","Yer"], yes:["Ja","Evet"], no:["Nee","Hayır"], dl_fail:["De pdf kon niet worden geladen. Probeer het opnieuw.","PDF yüklenemedi. Tekrar deneyin."],
@@ -349,10 +359,24 @@ function fill(d) { if (!d) return; for (const k of ["naam", "straat", "postcode"
 let draftT; const form = $("#v-form");
 form.addEventListener("input", () => { clearTimeout(draftT); draftT = setTimeout(() => { try { localStorage.setItem("mbv-draft", JSON.stringify(collect())); } catch {} }, 500); });
 function resetForm() { form.reset(); strokes = []; sigResize(); formPhotos.forEach(p => URL.revokeObjectURL(p.url)); formPhotos = []; renderFormPhotos();
-  try { localStorage.removeItem("mbv-draft"); } catch {} status(""); }
+  try { localStorage.removeItem("mbv-draft"); } catch {} status(""); scanSay(""); }
 $("#clear-form").addEventListener("click", resetForm);
 try { fill(JSON.parse(localStorage.getItem("mbv-draft") || "null")); } catch {}
 const status = (t, cls = "") => { const s = $("#save-status"); s.textContent = t; s.className = "status " + cls; };
+
+/* ---------- name and address from a photo of a document (read by Claude; the photo is not stored) ---------- */
+let sample = null;
+const SCAN_PROMPT = 'De afbeelding is een foto van een document (orderbevestiging, offerte, pakbon, factuur of adreslabel) met de gegevens van een klant. ' +
+  'Haal de naam en het adres van de KLANT eruit. Negeer de gegevens van de leverancier MB Veranda B.V. (Adriaan Mulderweg 4, Eindhoven en andere showrooms). ' +
+  'Antwoord met alleen een JSON-object in deze vorm: {"naam": "", "straat": "", "postcode": "", "plaats": ""}. "straat" is straat plus huisnummer. ' +
+  'Gebruik een lege string voor wat ontbreekt of niet leesbaar is. Verzin niets en neem niets anders over.';
+const scanSay = (t, cls = "") => { const e = $("#scan-status"); e.hidden = !t; e.textContent = t; e.className = "status " + cls; };
+$("#f-scan").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f || !sample) return; scanSay(m("sc_busy"));
+  try { const img = await shrink(f); const d = await sample.json(SCAN_PROMPT, { images: [img], cache: false }); let n = 0;
+    for (const k of ["naam", "straat", "postcode", "plaats"]) { const v = typeof d?.[k] === "string" ? d[k].replace(/\s+/g, " ").trim().slice(0, 120) : ""; if (v) { F(k).value = k === "postcode" ? normPc(v) : v; n++; } }
+    if (n) form.dispatchEvent(new Event("input")); scanSay(m(n ? "sc_ok" : "sc_none"), n ? "ok" : "err"); }
+  catch (err) { console.error(err); if (err?.code === "not_granted") { $("#scan-box").hidden = true; return scanSay(""); } if (err?.code === "cancelled") return scanSay("");
+    scanSay(m(err?.code === "rate_limited" ? "sc_wait" : "sc_fail"), "err"); } });
 
 /* ---------- formatting ---------- */
 const loc = () => lang === "tr" ? "tr-TR" : "nl-NL";
@@ -537,7 +561,8 @@ function renderDetail(r, msg = "", cls = "") { const s = $("#detail-sheet"); con
 /* ---------- boot ---------- */
 applyLang();
 (async () => { const use = n => window.claude?.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
-  [db, assets, downloads] = await Promise.all([use("db"), use("assets"), use("downloads")]);
+  [db, assets, downloads, sample] = await Promise.all([use("db"), use("assets"), use("downloads"), use("sample")]);
+  if (sample) sample.limits().then(l => { $("#scan-box").hidden = !l?.images; }, () => {});
   if (!db || !assets) { listState = "nocloud"; renderList(); if (!db) return; }
   const slow = setTimeout(() => { if (listState === "loading") { listState = "slow"; renderList(); } }, 10000);
   db.collection(COLL).orderBy("createdAt", "desc").limit(500).onSnapshot(snap => {
